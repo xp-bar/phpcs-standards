@@ -21,6 +21,7 @@ function main() {
         composer global require squizlabs/php_codesniffer
     fi
 
+    original_dir=$PWD
     phpcs_path=$(which phpcs)
     try_install
 }
@@ -87,27 +88,14 @@ function install_func() {
     if [[ $standards = *"XpBar"* ]]; then
         echo "XpBar: \033[32mCheck\033[0m"
     else
-        echo "XpBar: \033[31mMissing\033[0m]"
-        git clone git@github.com:xp-bar/.files.git
-        mv .files/phpcs/XpBar XpBar
+        echo "XpBar: \033[31mMissing\033[0m"
+        cp -rf $original_dir/XpBar XpBar 
         echo "Copied XpBar from repo."
     fi
 
     # Set Standard
     phpcs --config-set default_standard XpBar
 
-    read -p "Would you like koolaid and koolfix? - warning, only available for zsh. " -n 1 -r
-    if [[ "$REPLY" =~ ^[Yy]$ ]]; then
-        echo "\nAdding .koolaid to your home directory"
-        mv .files/.koolaid ~
-        echo "\nAdd the following line to your .zshrc, etc.!"
-        echo "\nsource ~/.koolaid"
-
-    else
-        echo "\nIf you'd like the same script for bash, sh, etc, please let me know, shouldn't be a huge issue to convert, I'm just lazy."
-        echo "\n"
-    fi 
-    rm -rf .files
     echo "\033[32m                                                
   mmmm  m    m   mmm    mmm  mmmmmm  mmmm   mmmm 
  #\"   \" #    # m\"   \" m\"   \" #      #\"   \" #\"   \"

@@ -51,7 +51,7 @@
 
     <rule ref="SlevomatCodingStandard.PHP.TypeCast"/>
 
-    <rule ref="SlevomatCodingStandard.TypeHints.ReturnTypeHintSpacing"/>
+    <!-- <rule ref="SlevomatCodingStandard.TypeHints.ReturnTypeHintSpacing"/> -->
 
     <!-- disabling until a supported php version -->
     <!-- <rule ref="SlevomatCodingStandard.TypeHints.TypeHintDeclaration"/> -->
@@ -106,7 +106,6 @@
     <rule ref="Squiz.ControlStructures.ForEachLoopDeclaration"/>
     <rule ref="Squiz.ControlStructures.ForLoopDeclaration"/>
     <rule ref="Squiz.ControlStructures.LowercaseDeclaration"/>
-
     <rule ref="Squiz.ControlStructures.ForEachLoopDeclaration.AsNotLower">
         <severity>0</severity>
     </rule>

@@ -25,14 +25,14 @@ class MissingReturnTypeSniff implements PHP_CodeSniffer_Sniff
      */
     public function process(PHP_CodeSniffer_File $phpcsFile, $stackPtr)
     {
-        $tokens = $phpcsFile->getTokens();
+        /* $tokens = $phpcsFile->getTokens(); */
 
-        $func = $phpcsFile->findNext(T_FUNCTION, $stackPtr);
+        /* $func = $phpcsFile->findNext(T_FUNCTION, $stackPtr); */
 
-        $phpcsFile->addWarning(
-            trim($tokens[$stackPtr]['content']),
-            $stackPtr,
-            "XpBar_MissingReturnType"
-        );
+        /* $phpcsFile->addWarning( */
+        /*     trim($tokens[$stackPtr]['content']), */
+        /*     $stackPtr, */
+        /*     "XpBar_MissingReturnType" */
+        /* ); */
     }//end process()
 }//end class

@@ -8,8 +8,8 @@ class Test
      *
      * @return string
      */
-    public function testFunc()
+    public function testFunc(): Test
     {
-        return "hello, world";
+        return new static()
     }
 }

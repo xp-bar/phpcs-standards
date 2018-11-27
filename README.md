@@ -15,7 +15,7 @@ You can find the accompanying zsh functions, `koolaid`, [here](https://github.co
 
 =======
 
-### Licenser
+### License
 
 Copyright (c) 2012-2018, Squiz Pty Ltd (ABN 77 084 670 600) and Nicholas Ireland
 All rights reserved.

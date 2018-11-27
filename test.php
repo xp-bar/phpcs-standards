@@ -6,10 +6,11 @@ class Test
     /**
      * Hello
      *
-     * @return string
+     * @param string $one
+     * @return \XpBar\Tests\Test
      */
     public function testFunc(): Test
     {
-        return new static()
+        return "string";
     }
 }

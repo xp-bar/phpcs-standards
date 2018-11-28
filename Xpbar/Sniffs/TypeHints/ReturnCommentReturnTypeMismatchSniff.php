@@ -72,6 +72,7 @@ class ReturnCommentReturnTypeMismatchSniff implements PHP_CodeSniffer_Sniff
     private function checkFunctionParameterDocParity(PHP_CodeSniffer_File $phpcsFile, array $tokens, int $funcPtr): void
     {
         $docParams = $this->getAssociatedTypeAndVariableDocNames($phpcsFile, $tokens, $funcPtr);
+        return;
         $typedParams = $this->getTypedArgumentPointers($phpcsFile, $tokens, $funcPtr);
         $functionName = $phpcsFile->getDeclarationName($funcPtr);
         foreach ($typedParams as $param) {
@@ -137,6 +138,14 @@ class ReturnCommentReturnTypeMismatchSniff implements PHP_CodeSniffer_Sniff
         }
     }
 
+    /**
+     * Get typed argument pointers for a function
+     *
+     * @param PHP_CodeSniffer_File $phpcsFile
+     * @param array $tokens
+     * @param int $functionPtr
+     * @return array
+     */
     private function getTypedArgumentPointers(PHP_CodeSniffer_File $phpcsFile, array $tokens, int $functionPtr): array
     {
         $typedArguments = [];
@@ -145,19 +154,29 @@ class ReturnCommentReturnTypeMismatchSniff implements PHP_CodeSniffer_Sniff
         $currentPtr = $argummentsBeginToken;
         while ($currentPtr != -1 && $currentPtr != false && $currentPtr < $argummentsEndToken) {
             $typePtr = $phpcsFile->findNext(self::T_TYPE_HINT, $currentPtr + 1, $argummentsEndToken, false, null, true);
-            if ($typePtr != false) {
+            if ($typePtr != -1 && $typePtr != false) {
                 $varPtr = $phpcsFile->findNext(T_VARIABLE, $typePtr + 1, $typePtr + 3, false, null, true);
-                $typedArguments[] = [
-                    'variable_name' => $tokens[$varPtr]['content'],
-                    'type_hint' => $typePtr != false ? $tokens[$typePtr]['content'] : "",
-                    'pointer' => $varPtr
-                ];
+                if ($varPtr != -1 && $varPtr != false) {
+                    $typedArguments[] = [
+                        'variable_name' => $tokens[$varPtr]['content'],
+                        'type_hint' => $typePtr != false ? $tokens[$typePtr]['content'] : "",
+                        'pointer' => $varPtr
+                    ];
+                }
             }
             $currentPtr = $typePtr;
         }
         return $typedArguments;
     }
 
+    /**
+     * Get typed argument pointers for a function
+     *
+     * @param PHP_CodeSniffer_File $phpcsFile
+     * @param array $tokens
+     * @param int $functionPtr
+     * @return array
+     */
     private function getAssociatedTypeAndVariableDocNames(
         PHP_CodeSniffer_File $phpcsFile,
         array $tokens,
@@ -167,6 +186,9 @@ class ReturnCommentReturnTypeMismatchSniff implements PHP_CodeSniffer_Sniff
         $currentPtr = $functionPtr;
         while ($currentPtr != -1 && $currentPtr != false) {
             $paramPtrs = $this->getFunctionParamCommentPointers($phpcsFile, $currentPtr);
+            if (count($paramPtrs) == 0) {
+                return [];
+            }
             $paramPtr = $paramPtrs[1];
             if ($paramPtr >= 0) {
                 $contents = $tokens[$paramPtr]['content'];
@@ -198,11 +220,15 @@ class ReturnCommentReturnTypeMismatchSniff implements PHP_CodeSniffer_Sniff
         $functionParamPtr = $phpcsFile->findPrevious(
             T_DOC_COMMENT_TAG,
             $functionPtr - 1,
-            $functionPtr - 40,
+            $functionPtr - 40 > 1 ? $functionPtr - 40 : 1,
             false,
             "@param",
             false
         );
+
+        if ($functionParamPtr == false) {
+            return [];
+        }
 
         $functionParamTypeHint = $phpcsFile->findNext(
             T_DOC_COMMENT_STRING,
@@ -212,6 +238,10 @@ class ReturnCommentReturnTypeMismatchSniff implements PHP_CodeSniffer_Sniff
             null,
             false
         );
+
+        if ($functionParamTypeHint == false) {
+            return [];
+        }
 
         return [$functionParamPtr, $functionParamTypeHint];
     }

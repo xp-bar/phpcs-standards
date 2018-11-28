@@ -6,8 +6,10 @@ All you should need to get started is the install script; simply
 
 1. Clone the Repo
 2. cd into the directory
-3. run `./install`
-4. (optional) run `./update` to update! (re-clones the repos and re-installs sniffs)
+3. `chmod +x ./install.sh`
+4. (optional) `cat install.sh` -- check the source code, make sure it's safe!
+5. run `./install`
+6. (optional) run `./update` to update! (re-clones the repos and re-installs sniffs)
 
 
 Then enjoy!

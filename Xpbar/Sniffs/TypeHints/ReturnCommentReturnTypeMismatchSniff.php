@@ -138,7 +138,7 @@ class ReturnCommentReturnTypeMismatchSniff implements PHP_CodeSniffer_Sniff
         $assocativeParamDocHints = [];
         $currentPtr = $functionPtr;
         while ($currentPtr != -1 && $currentPtr != false) {
-            $paramPtrs = $this->getFunctionParamCommentPointers($phpcsFile, $tokens, $currentPtr);
+            $paramPtrs = $this->getFunctionParamCommentPointers($phpcsFile, $currentPtr);
             $paramPtr = $paramPtrs[1];
             if ($paramPtr >= 0) {
                 $contents = $tokens[$paramPtr]['content'];
@@ -158,11 +158,24 @@ class ReturnCommentReturnTypeMismatchSniff implements PHP_CodeSniffer_Sniff
         return $assocativeParamDocHints;
     }
 
-    private function getFunctionParamCommentPointers(PHP_CodeSniffer_File $phpcsFile, array $tokens, int $functionPtr): array
+    /**
+     * Get a single @param comment pointer.
+     *
+     * @param PHP_CodeSniffer_File $phpcsFile
+     * @param int $functionPtr
+     */
+    private function getFunctionParamCommentPointers(PHP_CodeSniffer_File $phpcsFile, int $functionPtr): array
     {
         $functionParamPtr = $phpcsFile->findPrevious(T_DOC_COMMENT_TAG, $functionPtr - 1, null, false, "@param", false);
 
-        $functionParamTypeHint = $phpcsFile->findNext(T_DOC_COMMENT_STRING, $functionParamPtr + 1, null, false, null, false);
+        $functionParamTypeHint = $phpcsFile->findNext(
+            T_DOC_COMMENT_STRING,
+            $functionParamPtr + 1,
+            null,
+            false,
+            null,
+            false
+        );
 
         return [$functionParamPtr, $functionParamTypeHint];
     }
@@ -188,7 +201,8 @@ class ReturnCommentReturnTypeMismatchSniff implements PHP_CodeSniffer_Sniff
             $docReturnType = count($matchedReturnTypeClass) > 0 ? $matchedReturnTypeClass[0] : null;
 
             if ($returnType != $docReturnType) {
-                $warning = "@return tag '{$docReturnType}' does not match function return type declaration of '{$returnType}'";
+                $warning = "@return tag '{$docReturnType}'"
+                    . " does not match function return type declaration of '{$returnType}'";
                 $fix = $phpcsFile->addFixableWarning(
                     $warning,
                     $returnDocPtr,
@@ -209,12 +223,12 @@ class ReturnCommentReturnTypeMismatchSniff implements PHP_CodeSniffer_Sniff
      *
      * @param PHP_CodeSniffer_File $phpcsFile
      * @param mixed[] $tokens
-     * @param int $funcPtr
+     * @param int $functionPtr
      * @return int
      */
     private function getReturnTypePointer(PHP_CodeSniffer_File $phpcsFile, array $tokens, int $functionPtr): int
     {
-        $colonPtr = $phpcsFile->findNext(T_COLON, $functionPtr + 1, null, false, null, true);
+        $colonPtr = $phpcsFile->findFirstOnLine(T_COLON, $functionPtr + 1, false, null);
         if (! $colonPtr || ! isset($tokens[$colonPtr])) {
             return -1;
         }
@@ -232,12 +246,19 @@ class ReturnCommentReturnTypeMismatchSniff implements PHP_CodeSniffer_Sniff
      *
      * @param PHP_CodeSniffer_File $phpcsFile
      * @param mixed[] $tokens
-     * @param int $funcPtr
+     * @param int $functionPtr
      * @return int
      */
     private function getDocReturnTypePointer(PHP_CodeSniffer_File $phpcsFile, array $tokens, int $functionPtr): int
     {
-        $returnCommentPtr = $phpcsFile->findPrevious(T_DOC_COMMENT_TAG, $functionPtr - 1, $functionPtr - 15, false, "@return", false);
+        $returnCommentPtr = $phpcsFile->findPrevious(
+            T_DOC_COMMENT_TAG,
+            $functionPtr - 1,
+            $functionPtr - 15,
+            false,
+            "@return",
+            false
+        );
         if (! $returnCommentPtr || ! isset($tokens[$returnCommentPtr])) {
             return -1;
         }

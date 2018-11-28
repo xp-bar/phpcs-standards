@@ -2,6 +2,10 @@
 
 These are my personal phpcs standards, a collection of sniffs and rulesets from others, and some I've written myself.
 
+*Before Starting, make sure you can:*
+1. clone git objects via the command line with `git clone`
+2. `which phpcs` should return a path
+
 All you should need to get started is the install script; simply
 
 1. Clone the Repo
@@ -10,7 +14,7 @@ All you should need to get started is the install script; simply
 4. `chmod +x ./install.sh`
 5. run `./install`
 6. (optional) run `./update` to update! (re-clones the repos and re-installs sniffs)
-
+7. update your editor config to point to your global phpcs installation - `which phpcs` and to use the `XpBar` standard as the default
 
 Then enjoy!
 

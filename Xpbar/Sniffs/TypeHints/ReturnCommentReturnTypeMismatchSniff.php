@@ -8,6 +8,8 @@ use PHP_CodeSniffer\Sniffs\Sniff as PHP_CodeSniffer_Sniff;
 class ReturnCommentReturnTypeMismatchSniff implements PHP_CodeSniffer_Sniff
 {
     const T_RETURN_TYPE = [T_STRING, T_ARRAY, T_ARRAY_HINT, T_CALLABLE, T_SELF, T_PARENT];
+    const T_TYPE_HINT = [T_STRING, T_ARRAY, T_ARRAY_HINT, T_CALLABLE];
+
     /**
      * @return string[]
      */
@@ -57,22 +59,25 @@ class ReturnCommentReturnTypeMismatchSniff implements PHP_CodeSniffer_Sniff
         $typedParams = $this->getTypedArgumentPointers($phpcsFile, $tokens, $funcPtr);
         $functionName = $phpcsFile->getDeclarationName($funcPtr);
         foreach ($typedParams as $param) {
-            $docParam = $docParams[$param["variable_name"]] ?? null;
-              
-            if (count($docParams) == 0) {
+            $docParam = $docParams[trim($param["variable_name"])] ?? null;
+
+            if ($docParam == null && count($docParams) == 0) {
                 $warning = "No documentation comment detected for " . $functionName;
                 $phpcsFile->addWarning(
                     $warning,
                     $funcPtr,
                     "XpBar.TypeHints.MissingDocBlock"
                 );
+                return;
             } elseif ($docParam == null) {
+                var_dump($docParams);
                 $warning = "@param tag missing for " .$param['variable_name'];
                 $phpcsFile->addWarning(
                     $warning,
                     $param['pointer'],
                     "XpBar.TypeHints.MissingDocParamTag"
                 );
+                return;
             } elseif (!isset($docParam["type_hint"])) {
                 $warning = "@param tag " . $param['variable_name']
                     . "is missing a typehint.";
@@ -81,6 +86,7 @@ class ReturnCommentReturnTypeMismatchSniff implements PHP_CodeSniffer_Sniff
                     $param['pointer'],
                     "XpBar.TypeHints.MissingDocParamTypeHint"
                 );
+                return;
             } elseif (count(explode("|", $docParam["type_hint"])) > 1) {
                 $warning = "@param tag suggests multiple types for parameter "
                     . $param['variable_name']
@@ -90,10 +96,11 @@ class ReturnCommentReturnTypeMismatchSniff implements PHP_CodeSniffer_Sniff
                     $docParam['pointer'],
                     "XpBar.TypeHints.DocParamRefactorPotential"
                 );
+                return;
             } elseif ($docParam['type_hint'] != $param['type_hint'] && !empty($param['type_hint'])) {
                 $warning = "@param tag for ".$docParam['variable_name']
                     . " with type ".$docParam['type_hint']
-                    . " does not match function paramater declaration of type "
+                    . " does not match function parameter declaration of type "
                     . $param['type_hint'];
                 $fix = $phpcsFile->addFixableWarning(
                     $warning,
@@ -108,6 +115,7 @@ class ReturnCommentReturnTypeMismatchSniff implements PHP_CodeSniffer_Sniff
                 $replaced = preg_replace('/' . $docParam['type_hint'] . '/', $param['type_hint'], $original, 1);
                 $phpcsFile->fixer->replaceToken($docParam['pointer'], $replaced);
                 $phpcsFile->fixer->endChangeset();
+                return;
             }
         }
     }
@@ -119,22 +127,25 @@ class ReturnCommentReturnTypeMismatchSniff implements PHP_CodeSniffer_Sniff
         $argummentsEndToken = $tokens[$argummentsBeginToken]["parenthesis_closer"];
         $currentPtr = $argummentsBeginToken;
         while ($currentPtr != -1 && $currentPtr != false && $currentPtr < $argummentsEndToken) {
-            $varPtr = $phpcsFile->findNext(T_VARIABLE, $currentPtr + 1, $argummentsEndToken, false, null, true);
-            if ($varPtr != false) {
-                $typePtr = $phpcsFile->findPrevious(T_STRING, $varPtr - 1, $varPtr - 2, false, null, true);
+            $typePtr = $phpcsFile->findNext(self::T_TYPE_HINT, $currentPtr + 1, $argummentsEndToken, false, null, true);
+            if ($typePtr != false) {
+                $varPtr = $phpcsFile->findNext(T_VARIABLE, $typePtr + 1, $typePtr + 3, false, null, true);
                 $typedArguments[] = [
                     'variable_name' => $tokens[$varPtr]['content'],
                     'type_hint' => $typePtr != false ? $tokens[$typePtr]['content'] : "",
                     'pointer' => $varPtr
                 ];
             }
-            $currentPtr = $varPtr;
+            $currentPtr = $typePtr;
         }
         return $typedArguments;
     }
 
-    private function getAssociatedTypeAndVariableDocNames(PHP_CodeSniffer_File $phpcsFile, array $tokens, int $functionPtr): array
-    {
+    private function getAssociatedTypeAndVariableDocNames(
+        PHP_CodeSniffer_File $phpcsFile,
+        array $tokens,
+        int $functionPtr
+    ): array {
         $assocativeParamDocHints = [];
         $currentPtr = $functionPtr;
         while ($currentPtr != -1 && $currentPtr != false) {
@@ -166,7 +177,14 @@ class ReturnCommentReturnTypeMismatchSniff implements PHP_CodeSniffer_Sniff
      */
     private function getFunctionParamCommentPointers(PHP_CodeSniffer_File $phpcsFile, int $functionPtr): array
     {
-        $functionParamPtr = $phpcsFile->findPrevious(T_DOC_COMMENT_TAG, $functionPtr - 1, null, false, "@param", false);
+        $functionParamPtr = $phpcsFile->findPrevious(
+            T_DOC_COMMENT_TAG,
+            $functionPtr - 1,
+            $functionPtr - 40,
+            false,
+            "@param",
+            false
+        );
 
         $functionParamTypeHint = $phpcsFile->findNext(
             T_DOC_COMMENT_STRING,
@@ -222,7 +240,7 @@ class ReturnCommentReturnTypeMismatchSniff implements PHP_CodeSniffer_Sniff
      * Returns the pointer for a function's return type, or -1 if not found.
      *
      * @param PHP_CodeSniffer_File $phpcsFile
-     * @param mixed[] $tokens
+     * @param array $tokens
      * @param int $functionPtr
      * @return int
      */
@@ -245,7 +263,7 @@ class ReturnCommentReturnTypeMismatchSniff implements PHP_CodeSniffer_Sniff
      * Returns the pointer for a function document's return type, or -1 if not found.
      *
      * @param PHP_CodeSniffer_File $phpcsFile
-     * @param mixed[] $tokens
+     * @param array $tokens
      * @param int $functionPtr
      * @return int
      */

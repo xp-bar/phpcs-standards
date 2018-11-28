@@ -11,6 +11,13 @@ class ReturnCommentReturnTypeMismatchSniff implements PHP_CodeSniffer_Sniff
     const T_TYPE_HINT = [T_STRING, T_ARRAY, T_ARRAY_HINT, T_CALLABLE];
 
     /**
+     * Holds pointers to all functions in the file and their associated warnings.
+     *
+     * @var array
+     */
+    private $functionPointers = [];
+
+    /**
      * @return array
      */
     public function register()
@@ -42,8 +49,16 @@ class ReturnCommentReturnTypeMismatchSniff implements PHP_CodeSniffer_Sniff
             return;
         }
 
-        $this->checkReturnTypeDocParity($phpcsFile, $tokens, $funcPtr);
+        $funcName = $phpcsFile->getDeclarationName($funcPtr);
+
+        $this->functionPointers[$funcName] = [
+            'pointer' => $funcPtr,
+            'warnings' => [],
+            'errors' => []
+        ];
+
         $this->checkFunctionParameterDocParity($phpcsFile, $tokens, $funcPtr);
+        $this->checkReturnTypeDocParity($phpcsFile, $tokens, $funcPtr);
     }//end process()
 
     /**
@@ -64,14 +79,15 @@ class ReturnCommentReturnTypeMismatchSniff implements PHP_CodeSniffer_Sniff
 
             if ($docParam == null && count($docParams) == 0) {
                 $warning = "No documentation comment detected for " . $functionName;
+                $code = "XpBar.TypeHints.MissingDocBlock";
                 $phpcsFile->addWarning(
                     $warning,
                     $funcPtr,
-                    "XpBar.TypeHints.MissingDocBlock"
+                    $code
                 );
+                $this->functionPointers[$functionName]['warnings'][] = $code;
                 return;
             } elseif ($docParam == null) {
-                var_dump($docParams);
                 $warning = "@param tag missing for " .$param['variable_name'];
                 $phpcsFile->addWarning(
                     $warning,
@@ -175,6 +191,7 @@ class ReturnCommentReturnTypeMismatchSniff implements PHP_CodeSniffer_Sniff
      *
      * @param PHP_CodeSniffer_File $phpcsFile
      * @param int $functionPtr
+     * @return array
      */
     private function getFunctionParamCommentPointers(PHP_CodeSniffer_File $phpcsFile, int $functionPtr): array
     {
@@ -211,14 +228,22 @@ class ReturnCommentReturnTypeMismatchSniff implements PHP_CodeSniffer_Sniff
     {
         $returnDocPtr = $this->getDocReturnTypePointer($phpcsFile, $tokens, $funcPtr);
         $returnPtr = $this->getReturnTypePointer($phpcsFile, $tokens, $funcPtr);
+        $functionName = $phpcsFile->getDeclarationName($funcPtr);
 
-        if ($returnPtr >= 0 && $returnDocPtr < 0) {
-                $warning = "@return tag missing for '{$tokens[$returnPtr]['content']}'";
-                $phpcsFile->addWarning(
-                    $warning,
-                    $returnPtr,
-                    "XpBar.TypeHints.DocCommentReturnTypeMismatch"
-                );
+        if ($returnDocPtr < 0) {
+            if (in_array(
+                "XpBar.TypeHints.MissingDocBlock",
+                $this->functionPointers[$functionName]['warnings']
+            )) {
+                return;
+            }
+
+            $warning = "@return tag missing for {$functionName}";
+            $phpcsFile->addWarning(
+                $warning,
+                $funcPtr,
+                "XpBar.TypeHints.DocCommentReturnTypeMismatch"
+            );
         } elseif ($returnPtr >= 0 && $returnDocPtr >= 0) {
             $returnType = trim($tokens[$returnPtr]['content']);
 

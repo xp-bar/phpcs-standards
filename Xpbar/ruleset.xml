@@ -54,7 +54,7 @@
     <!-- <rule ref="SlevomatCodingStandard.TypeHints.ReturnTypeHintSpacing"/> -->
 
     <!-- disabling until a supported php version -->
-    <rule ref="SlevomatCodingStandard.TypeHints.TypeHintDeclaration"/>
+    <!-- <rule ref="SlevomatCodingStandard.TypeHints.TypeHintDeclaration"/> -->
     <rule ref="SlevomatCodingStandard.TypeHints.ParameterTypeHintSpacing"/>
     <!-- <rule ref="Hostnet.Functions.ReturnTypeDeclaration"/> -->
 

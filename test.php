@@ -7,11 +7,11 @@ class Test
      * Hello
      *
      * @param int $one
-     * @param Star $notTyped
+     * @param Star $notTyped A thing
      * @param Model $reg This is a reg
-     * @return \XpBar\Tests\Test
+     * @return Model
      */
-    public function testFunc(int $one, Model $notTyped, Model $reg): Test
+    public function testFunc(int $one, Star $notTyped, Model $reg): Model
     {
         $one = $notTyped;
         $one = $reg;

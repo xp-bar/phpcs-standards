@@ -39,7 +39,7 @@ class ReturnCommentReturnTypeMismatchSniff implements PHP_CodeSniffer_Sniff
             return;
         }
 
-        /* $this->checkReturnTypeDocParity($phpcsFile, $tokens, $funcPtr); */
+        $this->checkReturnTypeDocParity($phpcsFile, $tokens, $funcPtr);
         $this->checkFunctionParameterDocParity($phpcsFile, $tokens, $funcPtr);
     }//end process()
 
@@ -57,6 +57,7 @@ class ReturnCommentReturnTypeMismatchSniff implements PHP_CodeSniffer_Sniff
         $typedParams = $this->getTypedArgumentPointers($phpcsFile, $tokens, $funcPtr);
         foreach ($typedParams as $param) {
             $docParam = $docParams[$param["variable_name"]] ?? null;
+
             if ($docParam == null) {
                 $warning = "@param tag missing for " .$param['variable_name'];
                 $phpcsFile->addWarning(
@@ -64,16 +65,42 @@ class ReturnCommentReturnTypeMismatchSniff implements PHP_CodeSniffer_Sniff
                     $param['pointer'],
                     "XpBar_MissingDocParamTag"
                 );
-            } elseif ($docParam['type_hint'] != $param['type_hint']) {
+            } elseif (!isset($docParam["type_hint"])) {
+                $warning = "@param tag " . $param['variable_name']
+                    . "is missing a typehint.";
+                $phpcsFile->addWarning(
+                    $warning,
+                    $param['pointer'],
+                    "XpBar_MissingDocParamTypeHint"
+                );
+            } elseif (count(explode("|", $docParam["type_hint"])) > 1) {
+                $warning = "@param tag suggests multiple types for parameter "
+                    . $param['variable_name']
+                    . "; consider refactoring to only accept one type of input.";
+                $phpcsFile->addWarning(
+                    $warning,
+                    $docParam['pointer'],
+                    "XpBar_DocParamRefactorPotential"
+                );
+            } elseif ($docParam['type_hint'] != $param['type_hint'] && !empty($param['type_hint'])) {
                 $warning = "@param tag for ".$docParam['variable_name']
                     . " with type ".$docParam['type_hint']
                     . " does not match function paramater declaration of type "
                     . $param['type_hint'];
-                $phpcsFile->addWarning(
+                $fix = $phpcsFile->addFixableWarning(
                     $warning,
                     $docParam['pointer'],
                     "XpBar_DocCommentParamTypeMismatch"
                 );
+                if (!$fix) {
+                    /* return; */
+                }
+                $phpcsFile->fixer->beginChangeset();
+                $replacement = $param['type_hint'];
+                $original = $tokens[$docParam['pointer']]['content'];
+                $replaced = preg_replace('/' . $docParam['type_hint'] . '/', $param['type_hint'], $original, 1);
+                $phpcsFile->fixer->replaceToken($docParam['pointer'], $replaced);
+                $phpcsFile->fixer->endChangeset();
             }
         }
     }
@@ -88,13 +115,11 @@ class ReturnCommentReturnTypeMismatchSniff implements PHP_CodeSniffer_Sniff
             $varPtr = $phpcsFile->findNext(T_VARIABLE, $currentPtr + 1, $argummentsEndToken, false, null, true);
             if ($varPtr != false) {
                 $typePtr = $phpcsFile->findPrevious(T_STRING, $varPtr - 1, $varPtr - 2, false, null, true);
-                if ($typePtr != false) {
-                    $typedArguments[] = [
-                        'variable_name' => $tokens[$varPtr]['content'],
-                        'type_hint' => $tokens[$typePtr]['content'],
-                        'pointer' => $varPtr
-                    ];
-                }
+                $typedArguments[] = [
+                    'variable_name' => $tokens[$varPtr]['content'],
+                    'type_hint' => $typePtr != false ? $tokens[$typePtr]['content'] : "",
+                    'pointer' => $varPtr
+                ];
             }
             $currentPtr = $varPtr;
         }

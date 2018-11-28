@@ -4,7 +4,7 @@ These are my personal phpcs standards, a collection of sniffs and rulesets from 
 
 *Before Starting, make sure you can:*
 1. clone git objects via the command line with `git clone`
-2. `which phpcs` should return a path
+2. `which phpcs` should return a path if you have previously installed `phpcs`
 
 All you should need to get started is the install script; simply
 

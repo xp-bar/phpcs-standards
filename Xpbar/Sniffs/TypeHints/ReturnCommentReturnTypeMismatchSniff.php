@@ -11,7 +11,7 @@ class ReturnCommentReturnTypeMismatchSniff implements PHP_CodeSniffer_Sniff
     const T_TYPE_HINT = [T_STRING, T_ARRAY, T_ARRAY_HINT, T_CALLABLE];
 
     /**
-     * @return string[]
+     * @return array
      */
     public function register()
     {
@@ -19,6 +19,7 @@ class ReturnCommentReturnTypeMismatchSniff implements PHP_CodeSniffer_Sniff
             T_FUNCTION,
             T_DOC_COMMENT,
             T_VARIABLE,
+            T_COLON,
             T_RETURN_TYPE,
             T_OPEN_PARENTHESIS,
             T_CLOSE_PARENTHESIS
@@ -211,7 +212,14 @@ class ReturnCommentReturnTypeMismatchSniff implements PHP_CodeSniffer_Sniff
         $returnDocPtr = $this->getDocReturnTypePointer($phpcsFile, $tokens, $funcPtr);
         $returnPtr = $this->getReturnTypePointer($phpcsFile, $tokens, $funcPtr);
 
-        if ($returnPtr >= 0 && $returnDocPtr >= 0) {
+        if ($returnPtr >= 0 && $returnDocPtr < 0) {
+                $warning = "@return tag missing for '{$tokens[$returnPtr]['content']}'";
+                $phpcsFile->addWarning(
+                    $warning,
+                    $returnPtr,
+                    "XpBar.TypeHints.DocCommentReturnTypeMismatch"
+                );
+        } elseif ($returnPtr >= 0 && $returnDocPtr >= 0) {
             $returnType = trim($tokens[$returnPtr]['content']);
 
             $fullyQualifiedReturnType = trim($tokens[$returnDocPtr]['content']);
@@ -246,7 +254,12 @@ class ReturnCommentReturnTypeMismatchSniff implements PHP_CodeSniffer_Sniff
      */
     private function getReturnTypePointer(PHP_CodeSniffer_File $phpcsFile, array $tokens, int $functionPtr): int
     {
-        $colonPtr = $phpcsFile->findFirstOnLine(T_COLON, $functionPtr + 1, false, null);
+        $closeBracketPtr = $phpcsFile->findNext(T_CLOSE_PARENTHESIS, $functionPtr + 1, null, false, null, true);
+        if (! $closeBracketPtr || ! isset($tokens[$closeBracketPtr])) {
+            return -1;
+        }
+
+        $colonPtr = $phpcsFile->findNext(T_COLON, $closeBracketPtr + 1, $closeBracketPtr + 3, false, null, false);
         if (! $colonPtr || ! isset($tokens[$colonPtr])) {
             return -1;
         }

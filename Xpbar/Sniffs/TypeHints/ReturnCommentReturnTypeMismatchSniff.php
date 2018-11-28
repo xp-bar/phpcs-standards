@@ -237,12 +237,12 @@ class ReturnCommentReturnTypeMismatchSniff implements PHP_CodeSniffer_Sniff
      */
     private function getDocReturnTypePointer(PHP_CodeSniffer_File $phpcsFile, array $tokens, int $functionPtr): int
     {
-        $returnCommentPtr = $phpcsFile->findPrevious(T_DOC_COMMENT_TAG, $functionPtr - 1, $functionPtr - 4, false, "@return", false);
+        $returnCommentPtr = $phpcsFile->findPrevious(T_DOC_COMMENT_TAG, $functionPtr - 1, $functionPtr - 15, false, "@return", false);
         if (! $returnCommentPtr || ! isset($tokens[$returnCommentPtr])) {
             return -1;
         }
 
-        $returnTypeDocPtr = $phpcsFile->findNext(T_DOC_COMMENT_STRING, $returnCommentPtr + 1, $returnCommentPtr + 3, false, null, false);
+        $returnTypeDocPtr = $phpcsFile->findNext(T_DOC_COMMENT_STRING, $returnCommentPtr + 1, null, false, null, false);
         if (! $returnTypeDocPtr || ! isset($tokens[$returnTypeDocPtr])) {
             return -1;
         }

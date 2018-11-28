@@ -1,12 +1,13 @@
 # PHPCS Standards - The XpBar edition
 
-These are my personal phpcs standards.
+These are my personal phpcs standards, a collection of sniffs and rulesets from others, and some I've written myself.
 
 All you should need to get started is the install script; simply
 
 1. Clone the Repo
 2. cd into the directory
 3. run `./install`
+4. (optional) run `./update` to update! (re-clones the repos and re-installs sniffs)
 
 
 Then enjoy!
@@ -17,19 +18,15 @@ You can find the accompanying zsh functions, `koolaid`, [here](https://github.co
 
 ### License
 
-Copyright (c) 2012-2018, Squiz Pty Ltd (ABN 77 084 670 600) and Nicholas Ireland
+PHPCS and related libraries Copyright (c) 2012, Squiz Pty Ltd (ABN 77 084 670 600) and Nicholas Ireland
+This repo Copyright (c) 2018 Nicholas Ireland
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
-    * Redistributions of source code must retain the above copyright
-      notice, this list of conditions and the following disclaimer.
-    * Redistributions in binary form must reproduce the above copyright
-      notice, this list of conditions and the following disclaimer in the
-      documentation and/or other materials provided with the distribution.
-    * Neither the name of Squiz Pty Ltd nor the
-      names of its contributors may be used to endorse or promote products
-      derived from this software without specific prior written permission.
+* Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+* Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+* Neither the name of Nicholas Ireland, Squiz Pty Ltd nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED

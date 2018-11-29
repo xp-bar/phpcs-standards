@@ -4,6 +4,8 @@ namespace XpBar\Sniffs\TypeHints;
 
 use PHP_CodeSniffer\Files\File as PHP_CodeSniffer_File;
 use PHP_CodeSniffer\Sniffs\Sniff as PHP_CodeSniffer_Sniff;
+use SlevomatCodingStandard\Helpers\DocCommentHelper as SlevomatDocCommentHelper;
+use SlevomatCodingStandard\Helpers\FunctionHelper as SlevomatFunctionHelper;
 
 class ReturnCommentReturnTypeMismatchSniff implements PHP_CodeSniffer_Sniff
 {
@@ -23,13 +25,7 @@ class ReturnCommentReturnTypeMismatchSniff implements PHP_CodeSniffer_Sniff
     public function register()
     {
         return array(
-            T_FUNCTION,
-            T_DOC_COMMENT,
-            T_VARIABLE,
-            T_COLON,
-            T_RETURN_TYPE,
-            T_OPEN_PARENTHESIS,
-            T_CLOSE_PARENTHESIS
+            T_FUNCTION
         );
     }
 
@@ -48,7 +44,6 @@ class ReturnCommentReturnTypeMismatchSniff implements PHP_CodeSniffer_Sniff
         if (! $funcPtr || ! isset($tokens[$funcPtr])) {
             return;
         }
-
         $funcName = $phpcsFile->getDeclarationName($funcPtr);
 
         $this->functionPointers[$funcName] = [
@@ -57,9 +52,16 @@ class ReturnCommentReturnTypeMismatchSniff implements PHP_CodeSniffer_Sniff
             'errors' => []
         ];
 
-        $this->checkFunctionParameterDocParity($phpcsFile, $tokens, $funcPtr);
-        $this->checkReturnTypeDocParity($phpcsFile, $tokens, $funcPtr);
+        $this->checkParity($phpcsFile, $tokens, $funcPtr);
+        /* $this->checkFunctionParameterDocParity($phpcsFile, $tokens, $funcPtr); */
+        /* $this->checkReturnTypeDocParity($phpcsFile, $tokens, $funcPtr); */
     }//end process()
+
+
+    private function checkParity(PHP_CodeSniffer_File $phpcsFile, array $tokens, int $funcPtr): void
+    {
+        $hasDoc = SlevomatDocCommentHelper::hasDocComment($phpcsFile, $funcPtr);
+    }
 
     /**
      * Confirm that the return type in the doc block matches the return type declaration.
@@ -72,13 +74,13 @@ class ReturnCommentReturnTypeMismatchSniff implements PHP_CodeSniffer_Sniff
     private function checkFunctionParameterDocParity(PHP_CodeSniffer_File $phpcsFile, array $tokens, int $funcPtr): void
     {
         $docParams = $this->getAssociatedTypeAndVariableDocNames($phpcsFile, $tokens, $funcPtr);
-        return;
         $typedParams = $this->getTypedArgumentPointers($phpcsFile, $tokens, $funcPtr);
         $functionName = $phpcsFile->getDeclarationName($funcPtr);
         foreach ($typedParams as $param) {
             $docParam = $docParams[trim($param["variable_name"])] ?? null;
 
-            if ($docParam == null && count($docParams) == 0) {
+
+            if (! $hasDoc) {
                 $warning = "No documentation comment detected for " . $functionName;
                 $code = "XpBar.TypeHints.MissingDocBlock";
                 $phpcsFile->addWarning(
@@ -185,7 +187,7 @@ class ReturnCommentReturnTypeMismatchSniff implements PHP_CodeSniffer_Sniff
         $assocativeParamDocHints = [];
         $currentPtr = $functionPtr;
         while ($currentPtr != -1 && $currentPtr != false) {
-            $paramPtrs = $this->getFunctionParamCommentPointers($phpcsFile, $currentPtr);
+            $paramPtrs = $this->getFunctionParamCommentPointers($phpcsFile, $tokens, $currentPtr);
             if (count($paramPtrs) == 0) {
                 return [];
             }
@@ -212,21 +214,22 @@ class ReturnCommentReturnTypeMismatchSniff implements PHP_CodeSniffer_Sniff
      * Get a single @param comment pointer.
      *
      * @param PHP_CodeSniffer_File $phpcsFile
+     * @param array $tokens
      * @param int $functionPtr
      * @return array
      */
-    private function getFunctionParamCommentPointers(PHP_CodeSniffer_File $phpcsFile, int $functionPtr): array
+    private function getFunctionParamCommentPointers(PHP_CodeSniffer_File $phpcsFile, array $tokens, int $functionPtr): array
     {
         $functionParamPtr = $phpcsFile->findPrevious(
             T_DOC_COMMENT_TAG,
             $functionPtr - 1,
-            $functionPtr - 40 > 1 ? $functionPtr - 40 : 1,
+            null,
             false,
             "@param",
             false
         );
 
-        if ($functionParamPtr == false) {
+        if ($functionParamPtr || ! isset($tokens[$functionParamPtr])) {
             return [];
         }
 
@@ -239,7 +242,7 @@ class ReturnCommentReturnTypeMismatchSniff implements PHP_CodeSniffer_Sniff
             false
         );
 
-        if ($functionParamTypeHint == false) {
+        if ($functionParamTypeHint || ! isset($tokens[$functionParamTypeHint])) {
             return [];
         }
 
@@ -256,6 +259,9 @@ class ReturnCommentReturnTypeMismatchSniff implements PHP_CodeSniffer_Sniff
      */
     private function checkReturnTypeDocParity(PHP_CodeSniffer_File $phpcsFile, array $tokens, int $funcPtr): void
     {
+        $returnType = SlevomatFunctionHelper::findReturnTypeHint($phpcsFile, $funcPtr);
+
+        return;
         $returnDocPtr = $this->getDocReturnTypePointer($phpcsFile, $tokens, $funcPtr);
         $returnPtr = $this->getReturnTypePointer($phpcsFile, $tokens, $funcPtr);
         $functionName = $phpcsFile->getDeclarationName($funcPtr);

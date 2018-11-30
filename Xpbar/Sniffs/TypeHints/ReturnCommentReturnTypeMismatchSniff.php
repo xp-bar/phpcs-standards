@@ -177,16 +177,17 @@ class ReturnCommentReturnTypeMismatchSniff implements PHP_CodeSniffer_Sniff
             if ($parity === null) {
                 $this->addTooManyPossibleTypesWarning($paramTag, $argument);
                 return;
-            } elseif ($parity === false) {
-                if ($argumentIsNullable && strpos($paramTag['type_hint'], '|null') == -1) {
-                    // nullable without |null in doc
+            } elseif ($parity === false || $argumentIsNullable) {
+                if (! $argumentIsNullable && strpos($paramTag['type_hint'], '|null') === false) {
+                    $this->addMismatchedParamTypeHintWarning($paramTag, $argument);
                     return;
-                } elseif (strpos($paramTag['type_hint'], '|null') != -1 && !$argumentIsNullable) {
-                    // param states nullable, no nullable ?
+                } elseif ($argumentIsNullable && strpos($paramTag['type_hint'], '|null') === false) {
+                    $this->addNullableDocCommentMissingWarning($paramTag, $argument);
+                    return;
+                } elseif (strpos($paramTag['type_hint'], '|null') !== false && !$argumentIsNullable) {
+                    $this->addDocCommentNullableWarning($paramTag, $argument);
                     return;
                 }
-                $this->addMismatchedParamTypeHintWarning($paramTag, $argument);
-                return;
             }
             return;
         }

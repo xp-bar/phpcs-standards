@@ -85,4 +85,26 @@ trait Warnings
             "XpBar.TypeHints.DocCommentParamTypeMismatch"
         );
     }
+
+    private function addNullableDocCommentMissingWarning(array $param, $argument): void
+    {
+        $warning = "method parameter " . $param['name'] . " is nullable, null typehint missing from comment";
+
+        $this->phpcsFile->addWarning(
+            $warning,
+            $param['pointer'] + 2,
+            "XpBar.TypeHints.DocCommentParamMissingNullableMismatch"
+        );
+    }
+
+    private function addDocCommentNullableWarning(array $param, $argument): void
+    {
+        $warning = "parameter " . $param['name'] . " comment is nullable, but nullable operator is missing from parameter";
+
+        $this->phpcsFile->addWarning(
+            $warning,
+            $param['pointer'] + 2,
+            "XpBar.TypeHints.ParamNullableParamCommentMismatch"
+        );
+    }
 }

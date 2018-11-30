@@ -10,7 +10,7 @@ use SlevomatCodingStandard\Helpers\ReturnTypeHint as SlevomatReturnTypeHint;
 use SlevomatCodingStandard\Helpers\TokenHelper as SlevomatTokenHelper;
 use XpBar\Helpers\Warnings;
 
-class ReturnCommentReturnTypeMismatchSniff implements PHP_CodeSniffer_Sniff
+class CommentTypeDeclarationMatchSniffSniff implements PHP_CodeSniffer_Sniff
 {
     use Warnings;
 
@@ -60,14 +60,15 @@ class ReturnCommentReturnTypeMismatchSniff implements PHP_CodeSniffer_Sniff
      */
     private function checkParity(int $funcPtr): void
     {
+        $functionName = $this->phpcsFile->getDeclarationName($funcPtr);
         $returnType = SlevomatFunctionHelper::findReturnTypeHint($this->phpcsFile, $funcPtr);
-        if (! $returnType) {
+        if ($functionName !== "__construct" && ! $returnType) {
             $this->addMissingReturnTypeWarning($funcPtr);
         }
 
         $docCommentOpenPointer = SlevomatDocCommentHelper::findDocCommentOpenToken($this->phpcsFile, $funcPtr);
         if ($docCommentOpenPointer == null) {
-            $this->addMissingDocBlockWarning($funcPtr);
+            $this->addMissingDocBlockError($funcPtr);
             return;
         } elseif ($docCommentOpenPointer != null && $this->tokens[$docCommentOpenPointer] != null) {
             // has doc block
@@ -169,25 +170,27 @@ class ReturnCommentReturnTypeMismatchSniff implements PHP_CodeSniffer_Sniff
             $argumentIsNullable = $argument->isNullable();
 
             if ($paramTag['type_hint'] == null) {
-                $this->addMissingParamDocTypeHintWarning($paramTag, $argument);
+                $this->addMissingParamDocTypeHintWarning($paramTag);
                 return;
             }
             $parity = static::evaluateTypeHintParity($argumentTypeHint, $paramTag['type_hint'], $argumentIsNullable);
 
             if ($parity === null) {
-                $this->addTooManyPossibleTypesWarning($paramTag, $argument);
+                $this->addTooManyPossibleTypesWarning($paramTag);
                 return;
             } elseif ($parity === false || $argumentIsNullable) {
                 if (! $argumentIsNullable && strpos($paramTag['type_hint'], '|null') === false) {
                     $this->addMismatchedParamTypeHintWarning($paramTag, $argument);
                     return;
                 } elseif ($argumentIsNullable && strpos($paramTag['type_hint'], '|null') === false) {
-                    $this->addNullableDocCommentMissingWarning($paramTag, $argument);
+                    $this->addNullableDocCommentMissingWarning($paramTag);
                     return;
                 } elseif (strpos($paramTag['type_hint'], '|null') !== false && !$argumentIsNullable) {
-                    $this->addDocCommentNullableWarning($paramTag, $argument);
+                    $this->addDocCommentNullableWarning($paramTag);
                     return;
                 }
+                $this->addMismatchedParamTypeHintWarning($paramTag, $argument);
+                return;
             }
             return;
         }

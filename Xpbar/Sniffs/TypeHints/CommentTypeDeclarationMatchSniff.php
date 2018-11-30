@@ -14,15 +14,12 @@ class CommentTypeDeclarationMatchSniffSniff implements PHP_CodeSniffer_Sniff
 {
     use Warnings, Errors, Generic, Validators, Parity;
 
-    const T_RETURN_TYPE = [T_STRING, T_ARRAY, T_ARRAY_HINT, T_CALLABLE, T_SELF, T_PARENT];
-    const T_TYPE_HINT = [T_STRING, T_ARRAY, T_ARRAY_HINT, T_CALLABLE];
-
     /**
      * Register the tokens to parse in the file for these rules.
      *
      * @return array
      */
-    public function register()
+    public function register(): array
     {
         return array(
             T_FUNCTION

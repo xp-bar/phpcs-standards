@@ -31,6 +31,8 @@ All you should need to get started is the install script; simply
 6. (optional) run `./update` to update! (re-clones the repos and re-installs sniffs)
 
 ### MANUAL
+
+*If the above doesn't work for you, or if you have `phpcs` installed but `which phpcs` returns a blank string, try the below.*
 1. find your desired installation of phpcs. If you already have it installed, find where the bin file symlinks to - this is the install directory.
 2. in the installation directory, find the `Standards` folder under `src` - for my global composer install, it's under `~/.composer/vendor/squizlabs/php_codesniffer/src/Standards`.
 3. Clone each of repos listed in the preface above ([slevomat/coding-standard](https://github.com/slevomat/coding-standard), [hostnet/phpcs-tool](https://github.com/hostnet/phpcs-tool), [sirbrillig/variable-analysis](https://github.com/sirbrillig/phpcs-variable-analysis)) and find the folder that contains a folder called `Sniffs`. Unless the repos have changed since I've wrote this, this folder should be the top namespace for the project (ie. `SlevomatCodingStandard`, `Hostnet` and `VariableAnalysis`) and _should_ either be in the root of the project or under a src folder.

@@ -11,7 +11,7 @@ class Test
      * @param Model $reg
      * @return void
      */
-    public function testFunc(int $one, Test $notTyped, Model $reg)
+    public function testFunc(int $one, Test $notTyped, Model $reg): void
     {
         $one = $notTyped;
         $one = $reg;

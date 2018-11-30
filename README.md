@@ -1,6 +1,8 @@
 # PHPCS Standards - The XpBar edition
 
 These are my personal phpcs standards, a collection of sniffs and rulesets from others, and some I've written myself (because, why not?).
+
+
 ![why not?](https://media0.giphy.com/media/zrOklTY2Hbl4s/giphy.gif?cid=3640f6095bf56b65483174474187a565)
 
 ## PREFACE

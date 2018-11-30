@@ -4,9 +4,9 @@ These are my personal phpcs standards, a collection of sniffs and rulesets from 
 
 ## PREFACE
 
-This repo contains both my own work, and the works of [Squizlabs](https://github.com/squizlabs/PHP_CodeSniffer) and [Slevomat](https://github.com/slevomat/coding-standard), and uses phpcs Sniffs written by multiple other parties.
+This repo contains both my own work, and the works of [Squiz Labs](https://github.com/squizlabs/PHP_CodeSniffer) and [Slevomat](https://github.com/slevomat/coding-standard), and uses phpcs Sniffs written by multiple other parties.
 
-Repositories for sniffs not included in the default set provided by Squizlabs:
+Repositories for sniffs not included in the default set provided by Squiz Labs:
 - [slevomat/coding-standard](https://github.com/slevomat/coding-standard)
 - [hostnet/phpcs-tool](https://github.com/hostnet/phpcs-tool)
 - [sirbrillig/variable-analysis](https://github.com/sirbrillig/phpcs-variable-analysis)

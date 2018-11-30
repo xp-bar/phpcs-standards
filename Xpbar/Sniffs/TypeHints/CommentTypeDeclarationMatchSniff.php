@@ -4,9 +4,6 @@ namespace XpBar\Sniffs\TypeHints;
 
 use PHP_CodeSniffer\Files\File as PHP_CodeSniffer_File;
 use PHP_CodeSniffer\Sniffs\Sniff as PHP_CodeSniffer_Sniff;
-use SlevomatCodingStandard\Helpers\DocCommentHelper as SlevomatDocCommentHelper;
-use SlevomatCodingStandard\Helpers\FunctionHelper as SlevomatFunctionHelper;
-use SlevomatCodingStandard\Helpers\TokenHelper as SlevomatTokenHelper;
 use XpBar\Helpers\Errors;
 use XpBar\Helpers\Generic;
 use XpBar\Helpers\Parity;
@@ -21,6 +18,8 @@ class CommentTypeDeclarationMatchSniffSniff implements PHP_CodeSniffer_Sniff
     const T_TYPE_HINT = [T_STRING, T_ARRAY, T_ARRAY_HINT, T_CALLABLE];
 
     /**
+     * Register the tokens to parse in the file for these rules.
+     *
      * @return array
      */
     public function register()

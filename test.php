@@ -9,7 +9,7 @@ class Test
      * @param int $one this is an $dollar integer
      * @param Test $notTyped
      * @param Model $reg
-     * @return Model
+     * @return Model|null
      */
     public function testFunc(int $one, Test $notTyped, Model $reg): ?Model
     {

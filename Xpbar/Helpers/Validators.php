@@ -81,7 +81,7 @@ trait Validators
             $parity = static::evaluateTypeHintParity($argumentTypeHint, $paramTag['type_hint'], $argumentIsNullable);
 
             if ($parity === null) {
-                $this->addTooManyPossibleTypesWarning($paramTag);
+                $this->addTooManyPossibleTypesWarning($paramTag, "@param");
                 return;
             } elseif ($parity === false || $argumentIsNullable || $paramTagStatesNullable) {
                 if (!$argumentIsNullable && !$paramTagStatesNullable) {
@@ -89,7 +89,7 @@ trait Validators
                 } elseif ($argumentIsNullable && ! $paramTagStatesNullable) {
                     $this->addNullableDocCommentMissingWarning($paramTag);
                 } elseif ($paramTagStatesNullable && !$argumentIsNullable) {
-                    $this->addDocCommentNullableWarning($paramTag);
+                    $this->addDocCommentNullableWarning($paramTag, "@param");
                 }
 
                 $withoutNullParamTagName = str_replace('|null', '', $paramTag['type_hint']);
@@ -138,7 +138,7 @@ trait Validators
         }
 
         if ($returnParamTypeHint === null) {
-            // add missing return param typehint warning
+            $this->addMissingReturnParamTypeHintWarning($returnTag);
             return;
         }
 
@@ -150,14 +150,14 @@ trait Validators
         $parity = static::evaluateTypeHintParity($returnParamTypeHint, $returnTypeHint, $returnTypeIsNullable);
 
         if ($parity === null) {
-            // too many possible return types, consider refactoring warning
+            $this->addTooManyPossibleTypesWarning($returnTag, "@return");
         } elseif ($parity === false || $returnTypeIsNullable || $returnCommentStatesNullable) {
             if (!$returnTypeIsNullable && !$returnCommentStatesNullable) {
-                // mismatched return type warning
+                $this->addMismatchedReturnTypeHintWarning($returnTag, $returnType);
             } elseif ($returnTypeIsNullable && !$returnCommentStatesNullable) {
-                // return type is nullable, comment doesn't say warning
+                $this->addNullableReturnTypeDocCommentMissingWarning($returnTag);
             } elseif ($returnCommentStatesNullable && !$returnTypeIsNullable) {
-                // return type comment says null is possible, but return type is not nullable
+                $this->addDocCommentNullableWarning($returnTag, "@return");
             }
         }
         return;

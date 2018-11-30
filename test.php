@@ -9,9 +9,9 @@ class Test
      * @param int $one this is an $dollar integer
      * @param Test $notTyped
      * @param Model $reg
-     * @return void
+     * @return Model
      */
-    public function testFunc(int $one, Test $notTyped, Model $reg): void
+    public function testFunc(int $one, Test $notTyped, Model $reg): ?Model
     {
         $one = $notTyped;
         $one = $reg;

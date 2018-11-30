@@ -5,6 +5,11 @@ use SlevomatCodingStandard\Helpers\TokenHelper as SlevomatTokenHelper;
 
 trait Generic
 {
+    /**
+     * Get the classname or primitive of a namespaced class typehint
+     *
+     * @param string $class
+     */
     private static function getSimpleClassNameOrPrimitive(string $class): ?string
     {
         preg_match('/[\/\\A-z]*[^\w\| ]\K[\| A-z]*.*/', $class, $classMatch);
@@ -26,6 +31,11 @@ trait Generic
         return $class;
     }
 
+    /**
+     * Parse out each @tag in a doc block
+     *
+     * @param int $tagPointer
+     */
     private function parseCommentTagStrings(int $tagPointer)
     {
         $parsedTag = [
@@ -40,7 +50,11 @@ trait Generic
 
         $parsedTag['tag_type'] = $tagType;
 
-        $commentPointer = SlevomatTokenHelper::findNextExcluding($this->phpcsFile, T_DOC_COMMENT_WHITESPACE, $tagPointer + 1);
+        $commentPointer = SlevomatTokenHelper::findNextExcluding(
+            $this->phpcsFile,
+            T_DOC_COMMENT_WHITESPACE,
+            $tagPointer + 1
+        );
 
         $content = $this->tokens[$commentPointer]['content'];
 

@@ -38,6 +38,14 @@ trait Parity
         }
     }
 
+    /**
+     * evaluates the parity between two typehint strings
+     *
+     * @param string $typeA
+     * @param string $typeB
+     * @param bool $nullable
+     * @return bool|null
+     */
     private static function evaluateTypeHintParity(string $typeA, string $typeB, bool $nullable): ?bool
     {
         if ($typeA === $typeB) {
@@ -58,7 +66,6 @@ trait Parity
         if ($typeAClass === $typeBClass) {
             return true;
         }
-
 
         return false;
     }

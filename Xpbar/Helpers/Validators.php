@@ -12,6 +12,7 @@ trait Validators
      * @param array $parsedTag
      * @param array $arguments
      * @param SlevomatReturnTypeHint|null $returnType
+     * @param int $funcPtr
      * @return void
      */
     private function validateParsedCommentTags(
@@ -32,6 +33,14 @@ trait Validators
         }
     }
 
+    /**
+     * Validate that each argument has a doc comment
+     *
+     * @param array $tags
+     * @param array $arguments
+     * @param int $funcPtr
+     * @return void
+     */
     private function validateArgumentsHaveDocComments(array $tags, array $arguments, int $funcPtr): void
     {
         $tagVars = array_map(function ($tag) {
@@ -50,6 +59,13 @@ trait Validators
         }
     }
 
+    /**
+     * Validate that a parsed param tag matches it's declaration
+     *
+     * @param array $paramTag
+     * @param array $arguments
+     * @return void
+     */
     private function validateParsedParamTag(array $paramTag, array $arguments): void
     {
         if ($paramTag['name'] != null && isset($arguments[$paramTag['name']])) {
@@ -70,14 +86,21 @@ trait Validators
             } elseif ($parity === false || $argumentIsNullable || $paramTagStatesNullable) {
                 if (!$argumentIsNullable && !$paramTagStatesNullable) {
                     $this->addMismatchedParamTypeHintWarning($paramTag, $argument);
-                    return;
-                }
-                if ($argumentIsNullable && ! $paramTagStatesNullable) {
+                } elseif ($argumentIsNullable && ! $paramTagStatesNullable) {
                     $this->addNullableDocCommentMissingWarning($paramTag);
-                    return;
                 } elseif ($paramTagStatesNullable && !$argumentIsNullable) {
                     $this->addDocCommentNullableWarning($paramTag);
-                    return;
+                }
+
+                $withoutNullParamTagName = str_replace('|null', '', $paramTag['type_hint']);
+                $withoutNullParity = static::evaluateTypeHintParity(
+                    $argumentTypeHint,
+                    $withoutNullParamTagName,
+                    $argumentIsNullable
+                );
+
+                if ($withoutNullParity == false) {
+                    $this->addMismatchedParamTypeHintWarning($paramTag, $argument);
                 }
             }
             return;
@@ -85,6 +108,14 @@ trait Validators
         return;
     }
 
+    /**
+     * Validate that a parsed param tag matches it's declaration
+     *
+     * @param array $returnTag
+     * @param SlevomatReturnTypeHint|null $returnType
+     * @param int $funcPtr
+     * @return void
+     */
     private function validateParsedReturnTag(array $returnTag, ?SlevomatReturnTypeHint $returnType, int $funcPtr): void
     {
         $returnParamTypeHint = $returnTag['type_hint'];
@@ -106,7 +137,7 @@ trait Validators
             return;
         }
 
-        if (strpos($returnParamTypeHint, '|void') != -1 && $returnCommentStatesNullable) {
+        if (strpos($returnParamTypeHint, '|void') !== false && $returnCommentStatesNullable) {
             $this->addVoidTypesNotNullableCommentError($returnTag);
             return;
         }

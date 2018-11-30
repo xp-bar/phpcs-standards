@@ -6,18 +6,16 @@ use PHP_CodeSniffer\Files\File as PHP_CodeSniffer_File;
 use PHP_CodeSniffer\Sniffs\Sniff as PHP_CodeSniffer_Sniff;
 use SlevomatCodingStandard\Helpers\DocCommentHelper as SlevomatDocCommentHelper;
 use SlevomatCodingStandard\Helpers\FunctionHelper as SlevomatFunctionHelper;
+use SlevomatCodingStandard\Helpers\ReturnTypeHint as SlevomatReturnTypeHint;
+use SlevomatCodingStandard\Helpers\TokenHelper as SlevomatTokenHelper;
+use XpBar\Helpers\Warnings;
 
 class ReturnCommentReturnTypeMismatchSniff implements PHP_CodeSniffer_Sniff
 {
+    use Warnings;
+
     const T_RETURN_TYPE = [T_STRING, T_ARRAY, T_ARRAY_HINT, T_CALLABLE, T_SELF, T_PARENT];
     const T_TYPE_HINT = [T_STRING, T_ARRAY, T_ARRAY_HINT, T_CALLABLE];
-
-    /**
-     * Holds pointers to all functions in the file and their associated warnings.
-     *
-     * @var array
-     */
-    private $functionPointers = [];
 
     /**
      * @return array
@@ -44,322 +42,206 @@ class ReturnCommentReturnTypeMismatchSniff implements PHP_CodeSniffer_Sniff
         if (! $funcPtr || ! isset($tokens[$funcPtr])) {
             return;
         }
-        $funcName = $phpcsFile->getDeclarationName($funcPtr);
 
-        $this->functionPointers[$funcName] = [
-            'pointer' => $funcPtr,
-            'warnings' => [],
-            'errors' => []
-        ];
-
-        $this->checkParity($phpcsFile, $tokens, $funcPtr);
-        /* $this->checkFunctionParameterDocParity($phpcsFile, $tokens, $funcPtr); */
-        /* $this->checkReturnTypeDocParity($phpcsFile, $tokens, $funcPtr); */
+        $this->phpcsFile = $phpcsFile;
+        $this->tokens = $tokens;
+        
+        $this->checkParity($funcPtr);
     }//end process()
 
 
-    private function checkParity(PHP_CodeSniffer_File $phpcsFile, array $tokens, int $funcPtr): void
-    {
-        $hasDoc = SlevomatDocCommentHelper::hasDocComment($phpcsFile, $funcPtr);
-    }
-
     /**
-     * Confirm that the return type in the doc block matches the return type declaration.
+     * Check Type hint parity with comments
      *
      * @param PHP_CodeSniffer_File $phpcsFile
      * @param array $tokens
      * @param int $funcPtr
      * @return void
      */
-    private function checkFunctionParameterDocParity(PHP_CodeSniffer_File $phpcsFile, array $tokens, int $funcPtr): void
+    private function checkParity(int $funcPtr): void
     {
-        $docParams = $this->getAssociatedTypeAndVariableDocNames($phpcsFile, $tokens, $funcPtr);
-        $typedParams = $this->getTypedArgumentPointers($phpcsFile, $tokens, $funcPtr);
-        $functionName = $phpcsFile->getDeclarationName($funcPtr);
-        foreach ($typedParams as $param) {
-            $docParam = $docParams[trim($param["variable_name"])] ?? null;
+        $returnType = SlevomatFunctionHelper::findReturnTypeHint($this->phpcsFile, $funcPtr);
+        if (! $returnType) {
+            $this->addMissingReturnTypeWarning($funcPtr);
+        }
 
+        $docCommentOpenPointer = SlevomatDocCommentHelper::findDocCommentOpenToken($this->phpcsFile, $funcPtr);
+        if ($docCommentOpenPointer == null) {
+            $this->addMissingDocBlockWarning($funcPtr);
+            return;
+        } elseif ($docCommentOpenPointer != null && $this->tokens[$docCommentOpenPointer] != null) {
+            // has doc block
+            $tags = $this->tokens[$docCommentOpenPointer]['comment_tags'];
+            $arguments = SlevomatFunctionHelper::getParametersTypeHints($this->phpcsFile, $funcPtr);
+            $parsedTags = [];
+            if (! empty($tags)) {
+                // has comment tags
+                foreach ($tags as $tag) {
+                    $parsedTag = $this->parseCommentTagStrings($tag);
+                    $parsedTags[] = $parsedTag;
+                    $this->validateParsedCommentTags($parsedTag, $arguments, $returnType);
+                }
+            }
+            $this->validateArgumentsHaveDocComments($parsedTags, $arguments, $funcPtr);
+        }
+    }
 
-            if (! $hasDoc) {
-                $warning = "No documentation comment detected for " . $functionName;
-                $code = "XpBar.TypeHints.MissingDocBlock";
-                $phpcsFile->addWarning(
-                    $warning,
-                    $funcPtr,
-                    $code
-                );
-                $this->functionPointers[$functionName]['warnings'][] = $code;
+    private function parseCommentTagStrings(int $tagPointer)
+    {
+        $parsedTag = [
+            'name' => null,
+            'type_hint' => null,
+            'comment' => null,
+            'tag_type' => null,
+            'pointer' => $tagPointer,
+        ];
+
+        $tagType = $this->tokens[$tagPointer]['content'];
+
+        $parsedTag['tag_type'] = $tagType;
+
+        $commentPointer = SlevomatTokenHelper::findNextExcluding($this->phpcsFile, T_DOC_COMMENT_WHITESPACE, $tagPointer + 1);
+
+        $content = $this->tokens[$commentPointer]['content'];
+
+        // Match variable names
+        preg_match('/\$[A-z_]*\w/', $content, $varMatches);
+        if (! empty($varMatches) && $varMatches[0] != null) {
+            $parsedTag['name'] = trim($varMatches[0]);
+        }
+
+        // Match type hints
+        preg_match('/[\\A-z_\|]*(?<!\$)/', $content, $typeMatches);
+        if (! empty($typeMatches) && $typeMatches[0] != null) {
+            $parsedTag['type_hint'] = trim($typeMatches[0]);
+        }
+
+        // Match param comments
+        preg_match('/(\$[A-z_]*\w*)\K.*$/', $content, $commentMatches);
+        if (! empty($commentMatches) && $commentMatches[0] != null) {
+            $parsedTag['comment'] = trim($commentMatches[0]);
+        }
+
+        return $parsedTag;
+    }
+
+    private function validateParsedCommentTags(array $parsedTag, array $arguments, ?SlevomatReturnTypeHint $returnType)
+    {
+        switch ($parsedTag['tag_type']) {
+            case '@param':
+                $this->validateParsedParamTag($parsedTag, $arguments);
+                break;
+            case '@return':
+                if ($returnType == null) {
+                    // TODO: add "return type should be possible" warning
+                    break;
+                }
+                $this->validateParsedReturnTag($parsedTag, $returnType);
+                break;
+            default:
+                break;
+        }
+    }
+
+    private function validateArgumentsHaveDocComments(array $tags, array $arguments, int $funcPtr): void
+    {
+        $tagVars = array_map(function ($tag) {
+            return $tag['name'];
+        }, $tags);
+
+        foreach ($arguments as $name => $argument) {
+            if ($argument == null) {
+                $this->addMissingParamTypeHintWarning($name, $funcPtr);
+            }
+
+            $hasTag = in_array($name, $tagVars);
+            if (! $hasTag) {
+                $this->addMissingDocParamWarning($name, $funcPtr);
+            }
+        }
+    }
+
+    private function validateParsedParamTag(array $paramTag, array $arguments): void
+    {
+        if ($paramTag['name'] != null && isset($arguments[$paramTag['name']])) {
+            $argument = $arguments[$paramTag['name']];
+            $argumentTypeHint = $argument->getTypeHint();
+            $argumentIsNullable = $argument->isNullable();
+
+            if ($paramTag['type_hint'] == null) {
+                $this->addMissingParamDocTypeHintWarning($paramTag, $argument);
                 return;
-            } elseif ($docParam == null) {
-                $warning = "@param tag missing for " .$param['variable_name'];
-                $phpcsFile->addWarning(
-                    $warning,
-                    $param['pointer'],
-                    "XpBar.TypeHints.MissingDocParamTag"
-                );
+            }
+            $parity = static::evaluateTypeHintParity($argumentTypeHint, $paramTag['type_hint'], $argumentIsNullable);
+
+            if ($parity === null) {
+                $this->addTooManyPossibleTypesWarning($paramTag, $argument);
                 return;
-            } elseif (!isset($docParam["type_hint"])) {
-                $warning = "@param tag " . $param['variable_name']
-                    . "is missing a typehint.";
-                $phpcsFile->addWarning(
-                    $warning,
-                    $param['pointer'],
-                    "XpBar.TypeHints.MissingDocParamTypeHint"
-                );
-                return;
-            } elseif (count(explode("|", $docParam["type_hint"])) > 1) {
-                $warning = "@param tag suggests multiple types for parameter "
-                    . $param['variable_name']
-                    . "; consider refactoring to only accept one type of input.";
-                $phpcsFile->addWarning(
-                    $warning,
-                    $docParam['pointer'],
-                    "XpBar.TypeHints.DocParamRefactorPotential"
-                );
-                return;
-            } elseif ($docParam['type_hint'] != $param['type_hint'] && !empty($param['type_hint'])) {
-                $warning = "@param tag for ".$docParam['variable_name']
-                    . " with type ".$docParam['type_hint']
-                    . " does not match function parameter declaration of type "
-                    . $param['type_hint'];
-                $fix = $phpcsFile->addFixableWarning(
-                    $warning,
-                    $docParam['pointer'],
-                    "XpBar.TypeHints.DocCommentParamTypeMismatch"
-                );
-                if (!$fix) {
+            } elseif ($parity === false) {
+                if ($argumentIsNullable && strpos($paramTag['type_hint'], '|null') == -1) {
+                    // nullable without |null in doc
+                    return;
+                } elseif (strpos($paramTag['type_hint'], '|null') != -1 && !$argumentIsNullable) {
+                    // param states nullable, no nullable ?
                     return;
                 }
-                $phpcsFile->fixer->beginChangeset();
-                $original = $tokens[$docParam['pointer']]['content'];
-                $replaced = preg_replace('/' . $docParam['type_hint'] . '/', $param['type_hint'], $original, 1);
-                $phpcsFile->fixer->replaceToken($docParam['pointer'], $replaced);
-                $phpcsFile->fixer->endChangeset();
+                $this->addMismatchedParamTypeHintWarning($paramTag, $argument);
                 return;
             }
+            return;
         }
-    }
-
-    /**
-     * Get typed argument pointers for a function
-     *
-     * @param PHP_CodeSniffer_File $phpcsFile
-     * @param array $tokens
-     * @param int $functionPtr
-     * @return array
-     */
-    private function getTypedArgumentPointers(PHP_CodeSniffer_File $phpcsFile, array $tokens, int $functionPtr): array
-    {
-        $typedArguments = [];
-        $argummentsBeginToken = $phpcsFile->findNext(T_OPEN_PARENTHESIS, $functionPtr + 1, null, false, null, true);
-        $argummentsEndToken = $tokens[$argummentsBeginToken]["parenthesis_closer"];
-        $currentPtr = $argummentsBeginToken;
-        while ($currentPtr != -1 && $currentPtr != false && $currentPtr < $argummentsEndToken) {
-            $typePtr = $phpcsFile->findNext(self::T_TYPE_HINT, $currentPtr + 1, $argummentsEndToken, false, null, true);
-            if ($typePtr != -1 && $typePtr != false) {
-                $varPtr = $phpcsFile->findNext(T_VARIABLE, $typePtr + 1, $typePtr + 3, false, null, true);
-                if ($varPtr != -1 && $varPtr != false) {
-                    $typedArguments[] = [
-                        'variable_name' => $tokens[$varPtr]['content'],
-                        'type_hint' => $typePtr != false ? $tokens[$typePtr]['content'] : "",
-                        'pointer' => $varPtr
-                    ];
-                }
-            }
-            $currentPtr = $typePtr;
-        }
-        return $typedArguments;
-    }
-
-    /**
-     * Get typed argument pointers for a function
-     *
-     * @param PHP_CodeSniffer_File $phpcsFile
-     * @param array $tokens
-     * @param int $functionPtr
-     * @return array
-     */
-    private function getAssociatedTypeAndVariableDocNames(
-        PHP_CodeSniffer_File $phpcsFile,
-        array $tokens,
-        int $functionPtr
-    ): array {
-        $assocativeParamDocHints = [];
-        $currentPtr = $functionPtr;
-        while ($currentPtr != -1 && $currentPtr != false) {
-            $paramPtrs = $this->getFunctionParamCommentPointers($phpcsFile, $tokens, $currentPtr);
-            if (count($paramPtrs) == 0) {
-                return [];
-            }
-            $paramPtr = $paramPtrs[1];
-            if ($paramPtr >= 0) {
-                $contents = $tokens[$paramPtr]['content'];
-                preg_match('/\$[A-z]*\b/', $contents, $paramVarNameMatches);
-                if (count($paramVarNameMatches) > 0) {
-                    $paramVarName = $paramVarNameMatches[0];
-                    $paramTypeHint = trim(preg_replace('/\\'.$paramVarName.'.*$/', '', $contents));
-                    $assocativeParamDocHints[$paramVarName] = [
-                        'variable_name' => $paramVarName,
-                        'type_hint' => $paramTypeHint,
-                        'pointer' => $paramPtr
-                    ];
-                }
-            }
-            $currentPtr = $paramPtrs[0];
-        }
-        return $assocativeParamDocHints;
-    }
-
-    /**
-     * Get a single @param comment pointer.
-     *
-     * @param PHP_CodeSniffer_File $phpcsFile
-     * @param array $tokens
-     * @param int $functionPtr
-     * @return array
-     */
-    private function getFunctionParamCommentPointers(PHP_CodeSniffer_File $phpcsFile, array $tokens, int $functionPtr): array
-    {
-        $functionParamPtr = $phpcsFile->findPrevious(
-            T_DOC_COMMENT_TAG,
-            $functionPtr - 1,
-            null,
-            false,
-            "@param",
-            false
-        );
-
-        if ($functionParamPtr || ! isset($tokens[$functionParamPtr])) {
-            return [];
-        }
-
-        $functionParamTypeHint = $phpcsFile->findNext(
-            T_DOC_COMMENT_STRING,
-            $functionParamPtr + 1,
-            null,
-            false,
-            null,
-            false
-        );
-
-        if ($functionParamTypeHint || ! isset($tokens[$functionParamTypeHint])) {
-            return [];
-        }
-
-        return [$functionParamPtr, $functionParamTypeHint];
-    }
-
-    /**
-     * Confirm that the return type in the doc block matches the return type declaration.
-     *
-     * @param PHP_CodeSniffer_File $phpcsFile
-     * @param array $tokens
-     * @param int $funcPtr
-     * @return void
-     */
-    private function checkReturnTypeDocParity(PHP_CodeSniffer_File $phpcsFile, array $tokens, int $funcPtr): void
-    {
-        $returnType = SlevomatFunctionHelper::findReturnTypeHint($phpcsFile, $funcPtr);
-
         return;
-        $returnDocPtr = $this->getDocReturnTypePointer($phpcsFile, $tokens, $funcPtr);
-        $returnPtr = $this->getReturnTypePointer($phpcsFile, $tokens, $funcPtr);
-        $functionName = $phpcsFile->getDeclarationName($funcPtr);
-
-        if ($returnDocPtr < 0) {
-            if (in_array(
-                "XpBar.TypeHints.MissingDocBlock",
-                $this->functionPointers[$functionName]['warnings']
-            )) {
-                return;
-            }
-
-            $warning = "@return tag missing for {$functionName}";
-            $phpcsFile->addWarning(
-                $warning,
-                $funcPtr,
-                "XpBar.TypeHints.DocCommentReturnTypeMismatch"
-            );
-        } elseif ($returnPtr >= 0 && $returnDocPtr >= 0) {
-            $returnType = trim($tokens[$returnPtr]['content']);
-
-            $fullyQualifiedReturnType = trim($tokens[$returnDocPtr]['content']);
-            preg_match('/(?!\\\\)[A-Z]{0,1}[a-z]*$/', $fullyQualifiedReturnType, $matchedReturnTypeClass);
-            $docReturnType = count($matchedReturnTypeClass) > 0 ? $matchedReturnTypeClass[0] : null;
-
-            if ($returnType != $docReturnType) {
-                $warning = "@return tag '{$docReturnType}'"
-                    . " does not match function return type declaration of '{$returnType}'";
-                $fix = $phpcsFile->addFixableWarning(
-                    $warning,
-                    $returnDocPtr,
-                    "XpBar.TypeHints.DocCommentReturnTypeMismatch"
-                );
-                if (!$fix) {
-                    return;
-                }
-                $phpcsFile->fixer->beginChangeset();
-                $phpcsFile->fixer->replaceToken($returnDocPtr, $returnType);
-                $phpcsFile->fixer->endChangeset();
-            }
-        }
     }
 
-    /**
-     * Returns the pointer for a function's return type, or -1 if not found.
-     *
-     * @param PHP_CodeSniffer_File $phpcsFile
-     * @param array $tokens
-     * @param int $functionPtr
-     * @return int
-     */
-    private function getReturnTypePointer(PHP_CodeSniffer_File $phpcsFile, array $tokens, int $functionPtr): int
+    private static function evaluateTypeHintParity(string $typeA, string $typeB, bool $nullable): ?bool
     {
-        $closeBracketPtr = $phpcsFile->findNext(T_CLOSE_PARENTHESIS, $functionPtr + 1, null, false, null, true);
-        if (! $closeBracketPtr || ! isset($tokens[$closeBracketPtr])) {
-            return -1;
+        if ($typeA === $typeB) {
+            return true;
         }
 
-        $colonPtr = $phpcsFile->findNext(T_COLON, $closeBracketPtr + 1, $closeBracketPtr + 3, false, null, false);
-        if (! $colonPtr || ! isset($tokens[$colonPtr])) {
-            return -1;
+        $typeAClass = static::getSimpleClassNameOrPrimitive($typeA);
+        $typeBClass = static::getSimpleClassNameOrPrimitive($typeB);
+
+        if ($typeAClass === null || $typeBClass === null) {
+            return null;
         }
 
-        $returnTypePtr = $phpcsFile->findNext(self::T_RETURN_TYPE, $colonPtr + 1, null, false, null, true);
-        if (! $returnTypePtr || ! isset($tokens[$returnTypePtr])) {
-            return -1;
+        if (preg_replace('/\|[ ]*null/', '', $typeB) === $typeA && ! $nullable) {
+            return false;
         }
 
-        return $returnTypePtr;
+        if ($typeAClass === $typeBClass) {
+            return true;
+        }
+
+
+        return false;
     }
 
-    /**
-     * Returns the pointer for a function document's return type, or -1 if not found.
-     *
-     * @param PHP_CodeSniffer_File $phpcsFile
-     * @param array $tokens
-     * @param int $functionPtr
-     * @return int
-     */
-    private function getDocReturnTypePointer(PHP_CodeSniffer_File $phpcsFile, array $tokens, int $functionPtr): int
+    private static function getSimpleClassNameOrPrimitive(string $class): ?string
     {
-        $returnCommentPtr = $phpcsFile->findPrevious(
-            T_DOC_COMMENT_TAG,
-            $functionPtr - 1,
-            $functionPtr - 15,
-            false,
-            "@return",
-            false
-        );
-        if (! $returnCommentPtr || ! isset($tokens[$returnCommentPtr])) {
-            return -1;
+        preg_match('/[\/\\A-z]*[^\w\| ]\K[\| A-z]*.*/', $class, $classMatch);
+        $possible = explode("|", $class);
+        if (count($possible) > 1) {
+            $filtered = array_filter($possible, function ($type) {
+                return strtolower($type) != "null";
+            });
+            if (count($filtered) > 1) {
+                // too many possible types
+                return null;
+            }
+            return $filtered[0];
         }
 
-        $returnTypeDocPtr = $phpcsFile->findNext(T_DOC_COMMENT_STRING, $returnCommentPtr + 1, null, false, null, false);
-        if (! $returnTypeDocPtr || ! isset($tokens[$returnTypeDocPtr])) {
-            return -1;
+        if (count($classMatch) > 0 && $classMatch[0] != null) {
+            return $possible[0];
         }
+        return $class;
+    }
 
-        return $returnTypeDocPtr;
+    private function validateParsedReturnTag(array $returnTag, SlevomatReturnTypeHint $returnType)
+    {
+        /* var_dump($returnTag, $returnType); */
+        /* die; */
     }
 }//end class

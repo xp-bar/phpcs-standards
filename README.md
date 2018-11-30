@@ -16,6 +16,7 @@ All you should need to get started is the install script; simply
 5. run `./install`
 6. (optional) run `./update` to update! (re-clones the repos and re-installs sniffs)
 7. update your editor config to point to your global phpcs installation - `which phpcs` and to use the `XpBar` standard as the default
+8. (optional) run `phpcs --config-set warning_severity 3` to include warnings about return types, which I've marked with a lower priority until I move them into their own sniffs
 
 Then enjoy!
 

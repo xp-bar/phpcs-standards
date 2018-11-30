@@ -137,6 +137,11 @@ trait Validators
             return;
         }
 
+        if ($returnParamTypeHint === null) {
+            // add missing return param typehint warning
+            return;
+        }
+
         if (strpos($returnParamTypeHint, '|void') !== false && $returnCommentStatesNullable) {
             $this->addVoidTypesNotNullableCommentError($returnTag);
             return;

@@ -2,9 +2,6 @@
 
 These are my personal phpcs standards, a collection of sniffs and rulesets from others, and some I've written myself (because, why not?).
 
-
-![why not?](https://media0.giphy.com/media/zrOklTY2Hbl4s/giphy.gif?cid=3640f6095bf56b65483174474187a565)
-
 ## PREFACE
 
 This repo contains both my own work, and the works of [Squiz Labs](https://github.com/squizlabs/PHP_CodeSniffer) and [Slevomat](https://github.com/slevomat/coding-standard), and uses phpcs Sniffs written by multiple other parties.

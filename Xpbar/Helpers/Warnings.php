@@ -3,6 +3,7 @@
 namespace XpBar\Helpers;
 
 use SlevomatCodingStandard\Helpers\ParameterTypeHint as SlevomatParameterTypeHint;
+use SlevomatCodingStandard\Helpers\ReturnTypeHint as SlevomatReturnTypeHint;
 
 trait Warnings
 {
@@ -150,5 +151,23 @@ trait Warnings
         $severity = 3;
 
         $this->phpcsFile->addWarning($warning, $param['pointer'], $code, [], $severity);
+    }
+
+    private function addVoidTypesNotNullableError(SlevomatReturnTypeHint $returnType): void
+    {
+        $warning = "void return types are not nullable";
+        $code = "XpBar.TypeHints.ReturnTypesNotNullable";
+        $severity = 9;
+
+        $this->phpcsFile->addError($warning, $returnType->getStartPointer(), $code, [], $severity);
+    }
+
+    private function addVoidTypesNotNullableCommentError(array $returnTag): void
+    {
+        $warning = "@return " . $returnTag['type_hint'] . " is invalid; void return types cannot be nullable";
+        $code = "XpBar.TypeHints.ReturnTypesNotNullableComment";
+        $severity = 9;
+
+        $this->phpcsFile->addError($warning, $returnTag['pointer'], $code, [], $severity);
     }
 }

@@ -9,12 +9,13 @@ class Test
      * @param int $one this is an $dollar integer
      * @param Test $notTyped
      * @param Model $reg
-     * @return Hello
+     * @return void|hello|hi
      */
-    public function testFunc(int $one, Test $notTyped, Model $reg): Hello
+    public function testFunc(int $one, Test $notTyped, Model $reg)
     {
         $one = $notTyped;
         $one = $reg;
-        return "{$one} string";
+        echo $one;
+        /* return "{$one} string"; */
     }
 }

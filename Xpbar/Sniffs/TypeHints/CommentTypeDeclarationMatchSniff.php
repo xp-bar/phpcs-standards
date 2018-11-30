@@ -8,11 +8,12 @@ use SlevomatCodingStandard\Helpers\DocCommentHelper as SlevomatDocCommentHelper;
 use SlevomatCodingStandard\Helpers\FunctionHelper as SlevomatFunctionHelper;
 use SlevomatCodingStandard\Helpers\ReturnTypeHint as SlevomatReturnTypeHint;
 use SlevomatCodingStandard\Helpers\TokenHelper as SlevomatTokenHelper;
+use XpBar\Helpers\Errors;
 use XpBar\Helpers\Warnings;
 
 class CommentTypeDeclarationMatchSniffSniff implements PHP_CodeSniffer_Sniff
 {
-    use Warnings;
+    use Warnings, Errors;
 
     const T_RETURN_TYPE = [T_STRING, T_ARRAY, T_ARRAY_HINT, T_CALLABLE, T_SELF, T_PARENT];
     const T_TYPE_HINT = [T_STRING, T_ARRAY, T_ARRAY_HINT, T_CALLABLE];
@@ -126,17 +127,24 @@ class CommentTypeDeclarationMatchSniffSniff implements PHP_CodeSniffer_Sniff
         return $parsedTag;
     }
 
-    private function validateParsedCommentTags(array $parsedTag, array $arguments, ?SlevomatReturnTypeHint $returnType)
-    {
+    /**
+     * Validate parsed comment tags
+     *
+     * @param array $parsedTag
+     * @param array $arguments
+     * @param SlevomatReturnTypeHint|null $returnType
+     * @return void
+     */
+    private function validateParsedCommentTags(
+        array $parsedTag,
+        array $arguments,
+        ?SlevomatReturnTypeHint $returnType
+    ): void {
         switch ($parsedTag['tag_type']) {
             case '@param':
                 $this->validateParsedParamTag($parsedTag, $arguments);
                 break;
             case '@return':
-                if ($returnType == null) {
-                    // TODO: add "return type should be possible" warning
-                    break;
-                }
                 $this->validateParsedReturnTag($parsedTag, $returnType);
                 break;
             default:
@@ -180,6 +188,10 @@ class CommentTypeDeclarationMatchSniffSniff implements PHP_CodeSniffer_Sniff
                 $this->addTooManyPossibleTypesWarning($paramTag);
                 return;
             } elseif ($parity === false || $argumentIsNullable || $paramTagStatesNullable) {
+                if (!$argumentIsNullable && !$paramTagStatesNullable) {
+                    $this->addMismatchedParamTypeHintWarning($paramTag, $argument);
+                    return;
+                }
                 if ($argumentIsNullable && ! $paramTagStatesNullable) {
                     $this->addNullableDocCommentMissingWarning($paramTag);
                     return;
@@ -187,8 +199,6 @@ class CommentTypeDeclarationMatchSniffSniff implements PHP_CodeSniffer_Sniff
                     $this->addDocCommentNullableWarning($paramTag);
                     return;
                 }
-                $this->addMismatchedParamTypeHintWarning($paramTag, $argument);
-                return;
             }
             return;
         }
@@ -241,15 +251,25 @@ class CommentTypeDeclarationMatchSniffSniff implements PHP_CodeSniffer_Sniff
         return $class;
     }
 
-    private function validateParsedReturnTag(array $returnTag, SlevomatReturnTypeHint $returnType): void
+    private function validateParsedReturnTag(array $returnTag, ?SlevomatReturnTypeHint $returnType): void
     {
         $returnParamTypeHint = $returnTag['type_hint'];
-        $returnTypeHint = $returnType->getTypeHint();
-        $returnTypeIsNullable = $returnType->isNullable();
         $returnCommentStatesNullable = (bool) strpos($returnTag['type_hint'], '|null');
 
+        if ($returnType === null) {
+            // return type should be possible warning
+            return;
+        }
+
+        $returnTypeHint = $returnType->getTypeHint();
+        $returnTypeIsNullable = $returnType->isNullable();
+
         if ($returnTypeHint == 'void' && $returnTypeIsNullable) {
-            // return void types are not nullable error
+            $this->addVoidTypesNotNullableError($returnType);
+        }
+
+        if (strpos($returnParamTypeHint, '|void') != -1 && $returnCommentStatesNullable) {
+            $this->addVoidTypesNotNullableCommentError($returnTag);
         }
 
         $parity = static::evaluateTypeHintParity($returnParamTypeHint, $returnTypeHint, $returnTypeIsNullable);
@@ -258,15 +278,16 @@ class CommentTypeDeclarationMatchSniffSniff implements PHP_CodeSniffer_Sniff
             // too many possible return types, consider refactoring warning
             return;
         } elseif ($parity === false || $returnTypeIsNullable || $returnCommentStatesNullable) {
-            if ($returnTypeIsNullable && !$returnCommentStatesNullable) {
+            if (!$returnTypeIsNullable && !$returnCommentStatesNullable) {
+                // mismatched return type warning
+                return;
+            } elseif ($returnTypeIsNullable && !$returnCommentStatesNullable) {
                 // return type is nullable, comment doesn't say warning
                 return;
             } elseif ($returnCommentStatesNullable && !$returnTypeIsNullable) {
                 // return type comment says null is possible, but return type is not nullable
                 return;
             }
-            // mismatched return type warning
-            return;
         }
         return;
     }

@@ -10,6 +10,9 @@ use XpBar\Helpers\Parity;
 use XpBar\Helpers\Validators;
 use XpBar\Helpers\Warnings;
 
+/**
+ * Lints Doc blocks, function arguments and return types to make sure they match
+ */
 class CommentTypeDeclarationMatchSniffSniff implements PHP_CodeSniffer_Sniff
 {
     use Warnings, Errors, Generic, Validators, Parity;

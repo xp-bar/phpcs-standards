@@ -2,6 +2,18 @@
 
 These are my personal phpcs standards, a collection of sniffs and rulesets from others, and some I've written myself.
 
+## PREFACE
+
+This repo contains both my own work, and the works of [Squizlabs](https://github.com/squizlabs/PHP_CodeSniffer) and [Slevomat](https://github.com/slevomat/coding-standard), and uses phpcs Sniffs written by multiple other parties.
+
+Repositories for sniffs not included in the default set provided by Squizlabs:
+- [slevomat/coding-standard](https://github.com/slevomat/coding-standard)
+- [hostnet/phpcs-tool](https://github.com/hostnet/phpcs-tool)
+- [sirbrillig/variable-analysis](https://github.com/sirbrillig/phpcs-variable-analysis)
+- [xp-bar/phpcs-standards](#)
+
+## INSTALLATION
+
 *Before Starting, make sure:*
 1. you can clone git objects via the command line with `git clone`
 2. `which phpcs` should return a path if you have previously installed `phpcs`

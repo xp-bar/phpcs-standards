@@ -11,6 +11,8 @@ use SlevomatCodingStandard\Helpers\UseStatement;
 use SlevomatCodingStandard\Helpers\UseStatementHelper;
 use XpBar\Helpers\Errors;
 use XpBar\Helpers\Warnings;
+use SlevomatCodingStandard\Helpers\ClassHelper;
+use SlevomatCodingStandard\Helpers\TokenHelper;
 
 /**
  * Lints Doc blocks, function arguments and return types to make sure they match
@@ -64,13 +66,14 @@ class MissingImportSniff implements PHP_CodeSniffer_Sniff
 
             $missingImports[] = $referencedName;
         }
-        /* dump($missingImports); */
-        $files = $this->getClassFileNames();
+        $classPtr = TokenHelper::findNext($phpcsFile, [T_CLASS], $stackPtr);
+        $className = ClassHelper::getName($phpcsFile, $classPtr);
+        $files = $this->getClassFileNames($phpcsFile);
 
         foreach ($missingImports as $reference) {
             $name = $reference->getNameAsReferencedInFile();
             $checkedTypes = ['default'];
-            if (in_array($reference->getType(), $checkedTypes) && !in_array($name, $files)) {
+            if (in_array($reference->getType(), $checkedTypes) && !in_array($name, $files) && $name != $className) {
                 $message = "Missing Import for ".$name.", it's not in this directory!";
                 $phpcsFile->addWarning(
                     $message,
@@ -86,11 +89,13 @@ class MissingImportSniff implements PHP_CodeSniffer_Sniff
     /**
      * Parse the current directory so we can compare the filenames against the missing import classes
      *
+     * @param PHP_CodeSniffer_File $phpcsFile
      * @return array
      */
-    private function getClassFilenames(): array
+    private function getClassFilenames(PHP_CodeSniffer_File $phpcsFile): array
     {
-        $directory = opendir('./');
+        $currentDirectory = dirname($phpcsFile->path);
+        $directory = opendir($currentDirectory);
         $files = [];
         while (($item = readdir($directory)) != false) {
             if ($item == "." || $item == ".." || is_dir($item)) {

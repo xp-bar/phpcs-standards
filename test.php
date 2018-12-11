@@ -1,6 +1,8 @@
 <?php
 namespace XpBar\Tests;
 
+use Event;
+
 class Test
 {
     /**
@@ -15,6 +17,7 @@ class Test
     {
         $one = $notTyped;
         $one = $reg;
+        Event::find(1);
         echo $one;
         return "{$one} string";
     }

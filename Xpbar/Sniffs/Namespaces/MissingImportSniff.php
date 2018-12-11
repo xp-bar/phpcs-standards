@@ -4,13 +4,13 @@ namespace XpBar\Sniffs\Namespaces;
 
 use PHP_CodeSniffer\Files\File as PHP_CodeSniffer_File;
 use PHP_CodeSniffer\Sniffs\Sniff as PHP_CodeSniffer_Sniff;
+use SlevomatCodingStandard\Helpers\NamespaceHelper;
+use SlevomatCodingStandard\Helpers\ReferencedName;
 use SlevomatCodingStandard\Helpers\ReferencedNameHelper;
+use SlevomatCodingStandard\Helpers\UseStatement;
 use SlevomatCodingStandard\Helpers\UseStatementHelper;
 use XpBar\Helpers\Errors;
 use XpBar\Helpers\Warnings;
-use SlevomatCodingStandard\Helpers\NamespaceHelper;
-use SlevomatCodingStandard\Helpers\UseStatement;
-use SlevomatCodingStandard\Helpers\ReferencedName;
 
 /**
  * Lints Doc blocks, function arguments and return types to make sure they match
@@ -48,7 +48,6 @@ class MissingImportSniff implements PHP_CodeSniffer_Sniff
 
         foreach ($referencedNames as $referencedName) {
             $name = $referencedName->getNameAsReferencedInFile();
-            $pointer = $referencedName->getStartPointer();
             $nameParts = NamespaceHelper::getNameParts($name);
             $nameAsReferencedInFile = $nameParts[0];
             $nameReferencedWithoutSubNamespace = count($nameParts) === 1;
@@ -70,7 +69,8 @@ class MissingImportSniff implements PHP_CodeSniffer_Sniff
 
         foreach ($missingImports as $reference) {
             $name = $reference->getNameAsReferencedInFile();
-            if (!in_array($name, $files)) {
+            $checkedTypes = ['default'];
+            if (in_array($reference->getType(), $checkedTypes) && !in_array($name, $files)) {
                 $message = "Missing Import for ".$name.", it's not in this directory!";
                 $phpcsFile->addWarning(
                     $message,
@@ -83,6 +83,11 @@ class MissingImportSniff implements PHP_CodeSniffer_Sniff
         }
     }//end process()
 
+    /**
+     * Parse the current directory so we can compare the filenames against the missing import classes
+     *
+     * @return array
+     */
     private function getClassFilenames(): array
     {
         $directory = opendir('./');

@@ -37,7 +37,7 @@ function try_install() {
 }
 
 function install_func() {
-    echo "\n\n------------ Installing ------------\n";
+    echo "\n\n------------ Updating ------------\n";
     install_dir="$(dirname $phpcs_path)"
     echo "Changing directory to $install_dir"
     cd $install_dir
@@ -54,40 +54,44 @@ function install_func() {
     # Slevomat
     if [[ $standards = *"SlevomatCodingStandard"* ]]; then
         rm -rf SlevomatCodingStandard
-        echo "SlevomatCodingStandard: \033[33mUpdating\033[0m"
-        git clone git@github.com:slevomat/coding-standard.git
-        mv coding-standard/SlevomatCodingStandard SlevomatCodingStandard
-        rm -rf coding-standard
-        echo "Copied SlevomatCodingStandard from repo."
     fi
+
+    echo "SlevomatCodingStandard: \033[33mUpdating\033[0m"
+    git clone git@github.com:slevomat/coding-standard.git
+    mv coding-standard/SlevomatCodingStandard SlevomatCodingStandard
+    rm -rf coding-standard
+    echo "Copied SlevomatCodingStandard from repo."
 
     # Hostnet
     if [[ $standards = *"Hostnet"* ]]; then
         rm -rf Hostnet
-        echo "Hostnet: \033[33mUpdating\033[0m"
-        git clone git@github.com:hostnet/phpcs-tool.git
-        mv phpcs-tool/src/Hostnet Hostnet
-        rm -rf phpcs-tool
-        echo "Copied Hostnet from repo."
     fi
+
+    echo "Hostnet: \033[33mUpdating\033[0m"
+    git clone git@github.com:hostnet/phpcs-tool.git
+    mv phpcs-tool/src/Hostnet Hostnet
+    rm -rf phpcs-tool
+    echo "Copied Hostnet from repo."
 
     # VariableAnalysis
     if [[ $standards = *"VariableAnalysis"* ]]; then
         rm -rf VariableAnalysis
-        echo "VariableAnalysis: \033[33mUpdating\033[0m"
-        git clone git@github.com:sirbrillig/phpcs-variable-analysis.git
-        mv phpcs-variable-analysis/VariableAnalysis VariableAnalysis
-        rm -rf phpcs-variable-analysis
-        echo "Copied VariableAnalysis from repo."
     fi
+
+    echo "VariableAnalysis: \033[33mUpdating\033[0m"
+    git clone git@github.com:sirbrillig/phpcs-variable-analysis.git
+    mv phpcs-variable-analysis/VariableAnalysis VariableAnalysis
+    rm -rf phpcs-variable-analysis
+    echo "Copied VariableAnalysis from repo."
 
     # XpBar
     if [[ $standards = *"XpBar"* ]]; then
         rm -rf XpBar
-        echo "XpBar: \033[33mUpdating\033[0m"
-        cp -rf $original_dir/XpBar XpBar 
-        echo "Copied XpBar from repo."
     fi
+
+    echo "XpBar: \033[33mUpdating\033[0m"
+    cp -rf $original_dir/XpBar XpBar 
+    echo "Copied XpBar from repo."
 
     # Set Standard
     phpcs --config-set default_standard XpBar

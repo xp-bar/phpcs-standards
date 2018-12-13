@@ -130,6 +130,9 @@ trait Validators
         if ($returnType === null) {
             $functionName = $this->phpcsFile->getDeclarationName($funcPtr);
             if ($functionName !== "__construct" && count(explode('|', $returnParamTypeHint)) <= 2) {
+                if ($returnParamTypeHint === "void" && $this->phpVersion != null && $this->phpVersion < 702000) {
+                    return;
+                }
                 $this->addMissingReturnTypeWarning($funcPtr);
             }
             return;

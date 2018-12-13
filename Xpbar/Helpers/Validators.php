@@ -121,6 +121,12 @@ trait Validators
         $returnParamTypeHint = $returnTag['type_hint'];
         $returnCommentStatesNullable = (bool) strpos($returnTag['type_hint'], '|null');
 
+        if($returnParamTypeHint === 'mixed') {
+            $this->addMixedReturnTagWarning($returnTag);
+            return;
+        }
+
+
         if ($returnType === null) {
             $functionName = $this->phpcsFile->getDeclarationName($funcPtr);
             if ($functionName !== "__construct" && count(explode('|', $returnParamTypeHint)) <= 2) {

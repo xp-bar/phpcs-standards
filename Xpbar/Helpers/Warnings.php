@@ -192,4 +192,19 @@ trait Warnings
 
         $this->phpcsFile->addWarning($warning, $param['pointer'], $code, [], $severity);
     }
+
+    /**
+     * Add warning suggesting refactor because of mixed return type
+     *
+     * @param array $returnTag
+     * @return void
+     */
+    private function addMixedReturnTagWarning(array $returnTag): void
+    {
+        $warning = "@return " . $returnTag['type_hint'] . " indicates more than two possible return types; consider refactoring.";
+        $code = "XpBar.TypeHints.ReturnTypeHintMixedTooManyTypes";
+        $severity = 3;
+
+        $this->phpcsFile->addWarning($warning, $returnTag['pointer'], $code, [], $severity);
+    }
 }

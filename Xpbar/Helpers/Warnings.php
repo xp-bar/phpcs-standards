@@ -131,6 +131,9 @@ trait Warnings
      */
     private function addNullableDocCommentMissingWarning(array $param): void
     {
+        if($this->phpVersion != null && $this->phpVersion < 702000) {
+            return;
+        }
         $warning = "Method parameter " . $param['name'] . " is nullable, null type hint missing from comment";
         $code = "XpBar.TypeHints.DocCommentParamMissingNullableMismatch";
         $severity = 4;
@@ -146,6 +149,9 @@ trait Warnings
      */
     private function addNullableReturnTypeDocCommentMissingWarning(array $returnTag): void
     {
+        if($this->phpVersion != null && $this->phpVersion < 702000) {
+            return;
+        }
         $warning = "Return type " . $returnTag['type_hint'] . " is nullable, null type hint missing from @return comment";
         $code = "XpBar.TypeHints.DocCommentParamMissingNullableMismatch";
         $severity = 4;
@@ -162,6 +168,9 @@ trait Warnings
      */
     private function addDocCommentNullableWarning(array $param, string $tag): void
     {
+        if($this->phpVersion != null && $this->phpVersion < 702000) {
+            return;
+        }
         $warning = $tag . " " . $param['type_hint'] . ($param['name'] ?? "")
             . " comment suggests " . ($param['name'] ?? "return type") . " is nullable, but nullable operator is missing from "
             . ($tag === "@param" ? "parameter" : "return type declaration");

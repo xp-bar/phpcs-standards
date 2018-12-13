@@ -2,6 +2,7 @@
 
 namespace XpBar\Sniffs\TypeHints;
 
+use PHP_CodeSniffer\Config as PHP_CodeSniffer_Config;
 use PHP_CodeSniffer\Files\File as PHP_CodeSniffer_File;
 use PHP_CodeSniffer\Sniffs\Sniff as PHP_CodeSniffer_Sniff;
 use XpBar\Helpers\Errors;
@@ -39,6 +40,7 @@ class CommentTypeDeclarationMatchSniffSniff implements PHP_CodeSniffer_Sniff
      */
     public function process(PHP_CodeSniffer_File $phpcsFile, $stackPtr): void
     {
+        $this->phpVersion = PHP_CodeSniffer_Config::getConfigData('php_version') ?? PHP_VERSION_ID;
         $tokens = $phpcsFile->getTokens();
         $funcPtr = $phpcsFile->findNext(T_FUNCTION, $stackPtr, null, false, null, true);
         if (! $funcPtr || ! isset($tokens[$funcPtr])) {

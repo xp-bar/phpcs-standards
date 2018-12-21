@@ -70,6 +70,9 @@ class MissingImportSniff implements PHP_CodeSniffer_Sniff
             $missingImports[] = $referencedName;
         }
         $classPtr = TokenHelper::findNext($phpcsFile, [T_CLASS], $stackPtr);
+        if ($classPtr == false || $classPtr == null) {
+            return;
+        }
         $className = ClassHelper::getName($phpcsFile, $classPtr);
         $files = $this->getClassFileNames($phpcsFile);
 

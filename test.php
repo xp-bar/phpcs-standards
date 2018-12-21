@@ -21,4 +21,14 @@ class Test
         echo $one;
         return "{$one} string";
     }
+
+
+    /**
+     * Mixed Return
+     *
+     * @return mixed
+     */
+    public function mixed()
+    {
+    }
 }

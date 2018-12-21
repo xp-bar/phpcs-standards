@@ -4,15 +4,15 @@ namespace XpBar\Sniffs\Namespaces;
 
 use PHP_CodeSniffer\Files\File as PHP_CodeSniffer_File;
 use PHP_CodeSniffer\Sniffs\Sniff as PHP_CodeSniffer_Sniff;
+use SlevomatCodingStandard\Helpers\ClassHelper;
 use SlevomatCodingStandard\Helpers\NamespaceHelper;
 use SlevomatCodingStandard\Helpers\ReferencedName;
 use SlevomatCodingStandard\Helpers\ReferencedNameHelper;
+use SlevomatCodingStandard\Helpers\TokenHelper;
 use SlevomatCodingStandard\Helpers\UseStatement;
 use SlevomatCodingStandard\Helpers\UseStatementHelper;
 use XpBar\Helpers\Errors;
 use XpBar\Helpers\Warnings;
-use SlevomatCodingStandard\Helpers\ClassHelper;
-use SlevomatCodingStandard\Helpers\TokenHelper;
 
 /**
  * Lints Doc blocks, function arguments and return types to make sure they match

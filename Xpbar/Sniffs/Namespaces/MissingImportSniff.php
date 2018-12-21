@@ -50,6 +50,9 @@ class MissingImportSniff implements PHP_CodeSniffer_Sniff
 
         foreach ($referencedNames as $referencedName) {
             $name = $referencedName->getNameAsReferencedInFile();
+            if ($name == null) {
+                continue;
+            }
             $nameParts = NamespaceHelper::getNameParts($name);
             $nameAsReferencedInFile = $nameParts[0];
             $nameReferencedWithoutSubNamespace = count($nameParts) === 1;

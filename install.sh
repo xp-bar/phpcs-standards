@@ -61,6 +61,8 @@ function install_func() {
         rm -rf coding-standard
         echo "Copied SlevomatCodingStandard from repo."
     fi
+    echo "Installing Slevomat Dependencies..."
+    composer global require phpstan/phpdoc-parser
 
     # Hostnet
     if [[ $standards = *"Hostnet"* ]]; then
